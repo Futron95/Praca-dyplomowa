@@ -5,38 +5,106 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
+import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.InputStream;
-import java.net.MalformedURLException;
+import java.nio.file.Path;
+
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
 
 public class Controller {
     @FXML
     private Canvas canvas;
-    private Image image;
     private GraphicsContext gc;
+    private Mat m;
+    private MatOfByte byteMat;
+    private String filePath;
+    @FXML
+    private ImageView brightnessUp;
+    @FXML
+    private ImageView brightnessDown;
+    @FXML
+    private ImageView contrastUp;
+    @FXML
+    private ImageView contrastDown;
+    @FXML
+    private MenuItem save;
+
+    static{
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
 
     public void FileChooseAction(ActionEvent event)
     {
         FileChooser fc = new FileChooser();
+        FileChooser.ExtensionFilter fileExtensions =
+                new FileChooser.ExtensionFilter(
+                        "Obrazy", "*.bmp", "*.jpg");
+        fc.getExtensionFilters().add(fileExtensions);
         File selectedFile = fc.showOpenDialog(null);
-
         if(selectedFile != null){
-            System.out.println("Sciezka: "+selectedFile.getAbsolutePath());
-            try {
-                image = new Image(selectedFile.toURI().toURL().toExternalForm());
-                canvas.setHeight(image.getHeight());
-                canvas.setWidth(image.getWidth());
-                gc = canvas.getGraphicsContext2D();
-                gc.drawImage(image,0,0);
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
+            filePath = selectedFile.getAbsolutePath();
+            System.out.println("Sciezka: "+filePath);
+            m = Imgcodecs.imread(filePath);
+            byteMat = new MatOfByte();
+            canvas.setHeight(m.height());
+            canvas.setWidth(m.width());
+            gc = canvas.getGraphicsContext2D();
+            drawImage();
+            enableButtons();
         } else {
             System.out.println("Plik niepoprawny!");
         }
+    }
+
+    private void drawImage()
+    {
+        Imgcodecs.imencode(".bmp", m, byteMat);
+        gc.drawImage(new Image(new ByteArrayInputStream(byteMat.toArray())),0,0);
+    }
+
+    public void increaseBrightness()
+    {
+        m.convertTo(m,-1,1,10);
+        drawImage();
+    }
+
+    public void decreaseBrightness()
+    {
+        m.convertTo(m,-1,1,-10);
+        drawImage();
+    }
+
+    public void increaseContrast()
+    {
+        m.convertTo(m,-1,1.05);
+        drawImage();
+    }
+
+    public void decreaseContrast()
+    {
+        m.convertTo(m,-1,0.95);
+        drawImage();
+    }
+
+    public void saveImage()
+    {
+        Imgcodecs.imwrite(filePath,m);
+    }
+
+    private void enableButtons()
+    {
+        brightnessUp.setDisable(false);
+        brightnessDown.setDisable(false);
+        contrastDown.setDisable(false);
+        contrastUp.setDisable(false);
+        save.setDisable(false);
     }
 }
