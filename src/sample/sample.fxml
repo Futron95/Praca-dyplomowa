@@ -43,7 +43,7 @@
             </MenuBar>
             <Pane prefHeight="34.0" prefWidth="704.0">
                <children>
-                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="20.0" layoutY="4.0" onMouseClicked="#decreaseContrast" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="20.0" layoutY="4.0" onMouseClicked="#decreaseBrightness" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20down.png" />
                      </image>
@@ -61,6 +61,16 @@
                   <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="103.0" layoutY="4.0" onMouseClicked="#decreaseContrast" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20down.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="193.0" layoutY="4.0" onMouseClicked="#decreaseSaturation" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/saturation%20down.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="236.0" layoutY="4.0" onMouseClicked="#increaseSaturation" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/saturation%20up.png" />
                      </image>
                   </ImageView>
                </children>

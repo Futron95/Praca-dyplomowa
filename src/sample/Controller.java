@@ -18,6 +18,11 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+
+import static org.opencv.imgproc.Imgproc.COLOR_HSV2BGR;
+import static org.opencv.imgproc.Imgproc.COLOR_HSV2RGB;
+import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV;
 
 public class Controller {
     @FXML
@@ -35,6 +40,10 @@ public class Controller {
     @FXML
     private ImageView contrastDown;
     @FXML
+    private ImageView saturationUp;
+    @FXML
+    private ImageView saturationDown;
+    @FXML
     private MenuItem save;
 
     static{
@@ -46,7 +55,7 @@ public class Controller {
         FileChooser fc = new FileChooser();
         FileChooser.ExtensionFilter fileExtensions =
                 new FileChooser.ExtensionFilter(
-                        "Obrazy", "*.bmp", "*.jpg");
+                        "Obrazy", "*.bmp", "*.jpg", "*.png");
         fc.getExtensionFilters().add(fileExtensions);
         File selectedFile = fc.showOpenDialog(null);
         if(selectedFile != null){
@@ -94,6 +103,38 @@ public class Controller {
         drawImage();
     }
 
+    public void increaseSaturation()
+    {
+        changeSaturation(10.0);
+    }
+
+    public void decreaseSaturation()
+    {
+        changeSaturation(-10.0);
+    }
+
+    private void changeSaturation(double change)
+    {
+        Mat img = new Mat();
+        double pixelData[];
+        Imgproc.cvtColor(m,img,COLOR_RGB2HSV);
+        for(int y=0; y<img.height(); y++)
+        {
+            for (int x = 0; x < img.width(); x++)
+            {
+                pixelData = img.get(y,x);
+                pixelData[1]+=change;
+                if (pixelData[1]>180)
+                    pixelData[1] = 180;
+                if (pixelData[1]<0)
+                    pixelData[1] = 0;
+                img.put(y,x,pixelData);
+            }
+        }
+        Imgproc.cvtColor(img,m,COLOR_HSV2RGB);
+        drawImage();
+    }
+
     public void saveImage()
     {
         Imgcodecs.imwrite(filePath,m);
@@ -105,6 +146,8 @@ public class Controller {
         brightnessDown.setDisable(false);
         contrastDown.setDisable(false);
         contrastUp.setDisable(false);
+        saturationUp.setDisable(false);
+        saturationDown.setDisable(false);
         save.setDisable(false);
     }
 }
