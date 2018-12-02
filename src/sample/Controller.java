@@ -4,23 +4,19 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.nio.file.Path;
-
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
-import static org.opencv.imgproc.Imgproc.COLOR_HSV2BGR;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+
 import static org.opencv.imgproc.Imgproc.COLOR_HSV2RGB;
 import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV;
 
@@ -28,7 +24,7 @@ public class Controller {
     @FXML
     private Canvas canvas;
     private GraphicsContext gc;
-    private Mat m;
+    private Mat m;              //macierz pixeli obrazu
     private MatOfByte byteMat;
     private String filePath;
     @FXML
@@ -45,7 +41,11 @@ public class Controller {
     private ImageView saturationDown;
     @FXML
     private MenuItem save;
-
+    @FXML
+    private MenuItem encode;
+    @FXML
+    private MenuItem decode;
+    private Encoder encoder;
     static{
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
@@ -140,6 +140,26 @@ public class Controller {
         Imgcodecs.imwrite(filePath,m);
     }
 
+    public void encodeImg()
+    {
+        encoder = new Encoder();
+        encoder.encode(m);
+        drawImage();
+        CodeOutputWindow.display(encoder.codeString);
+    }
+
+    public void openDecodeWindow()
+    {
+        CodeInputWindow.display(this);
+    }
+
+    public void decodeImg(String code)
+    {
+        encoder = new Encoder();
+        encoder.decode(m,code);
+        drawImage();
+    }
+
     private void enableButtons()
     {
         brightnessUp.setDisable(false);
@@ -149,5 +169,7 @@ public class Controller {
         saturationUp.setDisable(false);
         saturationDown.setDisable(false);
         save.setDisable(false);
+        encode.setDisable(false);
+        decode.setDisable(false);
     }
 }
