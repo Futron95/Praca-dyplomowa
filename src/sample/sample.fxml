@@ -4,12 +4,21 @@
 <?import javafx.geometry.*?>
 <?import javafx.scene.*?>
 <?import javafx.scene.canvas.*?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.Cursor?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
 
 <BorderPane prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <top>
@@ -29,6 +38,7 @@
                     <MenuItem mnemonicParsing="false" text="Cofnij" />
                         <MenuItem fx:id="encode" disable="true" mnemonicParsing="false" onAction="#encodeImg" text="Szyfruj" />
                         <MenuItem fx:id="decode" disable="true" mnemonicParsing="false" onAction="#openDecodeWindow" text="Odszyfruj" />
+                        <MenuItem fx:id="stitchingMenuItem" disable="true" mnemonicParsing="false" onAction="#stitchImg" text="Doklej obraz" />
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Pomoc">
@@ -43,34 +53,44 @@
             </MenuBar>
             <Pane prefHeight="34.0" prefWidth="1100.0">
                <children>
-                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="20.0" layoutY="4.0" onMouseClicked="#decreaseBrightness" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="109.0" layoutY="4.0" onMouseClicked="#decreaseBrightness" onMousePressed="#brightnessDownPressed" onMouseReleased="#brightnessDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20down.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="63.0" layoutY="4.0" onMouseClicked="#increaseBrightness" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="152.0" layoutY="4.0" onMouseClicked="#increaseBrightness" onMousePressed="#brightnessUpPressed" onMouseReleased="#brightnessUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20up.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="146.0" layoutY="4.0" onMouseClicked="#increaseContrast" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="235.0" layoutY="4.0" onMouseClicked="#increaseContrast" onMousePressed="#contrastUpPressed" onMouseReleased="#contrastUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20up.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="103.0" layoutY="4.0" onMouseClicked="#decreaseContrast" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="192.0" layoutY="4.0" onMouseClicked="#decreaseContrast" onMousePressed="#contrastDownPressed" onMouseReleased="#contrastDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20down.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="193.0" layoutY="4.0" onMouseClicked="#decreaseSaturation" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="282.0" layoutY="4.0" onMouseClicked="#decreaseSaturation" onMousePressed="#saturationDownPressed" onMouseReleased="#saturationDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/saturation%20down.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="236.0" layoutY="4.0" onMouseClicked="#increaseSaturation" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="325.0" layoutY="4.0" onMouseClicked="#increaseSaturation" onMousePressed="#saturationUpPressed" onMouseReleased="#saturationUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/saturation%20up.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="back" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="10.0" layoutY="4.0" onMouseClicked="#undo" onMousePressed="#backPressed" onMouseReleased="#backReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/back3.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="forward" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="46.0" layoutY="4.0" onMouseClicked="#redo" onMousePressed="#forwardPressed" onMouseReleased="#forwardReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/forward3.png" />
                      </image>
                   </ImageView>
                </children>
