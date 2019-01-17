@@ -25,12 +25,12 @@ import static org.opencv.imgproc.Imgproc.INTER_NEAREST;
 public class Stitcher
 {
     private static Point p1, p2;
-    private static Mat m1, m2, m3;
+    private static Mat om1, om2, m1, m2, m3;
     private static GraphicsContext gc;
     private static MatOfByte matOfByte;
-    private static ArrayList<Mat> customMats;
-    private static final int M2WIDTH = 100;
-    private static double scale = 1.0;
+    private static ArrayList<CustomMat> customMats;
+    private static final int M2TARGET_WIDTH = 100;
+    private static double scale, m2Scale = 1.0;
     private static Canvas canvas;
 
     private static void draw()
@@ -39,12 +39,110 @@ public class Stitcher
         gc.drawImage(new Image(new ByteArrayInputStream(matOfByte.toArray())),0,0);
     }
 
+    private static void createCustomMats()
+    {
+        customMats = new ArrayList<>();
+        m2 = m2.submat(Range.all (), new Range((int)(p2.x-m1.width()), m2.width()-(int)(m1.width()-p1.x)) );     // kadrowanie dopasowywanego obrazu od zaznaczonego punktu do szerokości fragmentu pierwszego obrazu z którym będzie porównywany
+        if (m2.width() >= 2* M2TARGET_WIDTH) {
+            m2Scale = m2.width() / M2TARGET_WIDTH;
+            Imgproc.resize(m2, m2, new Size(M2TARGET_WIDTH, m2.height()/m2Scale));
+            Imgproc.resize(m1, m1, new Size(m1.width()/m2Scale, m1.height()/m2Scale));
+        }
+        int cm = 1;
+        for (double scale = 1.0; scale < 1.21; scale += 0.01)
+        {
+            Mat sm = new Mat();     //nowy obiekt który przechowa przeskalowaną macierz na podstawie której będą tworzone jej wersje z dołożoną rotacją
+            Imgproc.resize(m2, sm, new Size(m2.width()*scale, m2.height()*scale), 0,0, INTER_NEAREST);      //tworzenie 21 różnych wersji wielkości dopasowywanego obrazu
+            double yCenter = p2.y/m2Scale*scale;                                                                //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
+            for (double angle = -4; angle<=4; angle += 1.0)
+            {
+                CustomMat am = new CustomMat();
+                Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_LANCZOS4);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
+                am.angle = angle;
+                am.scale = scale;
+                customMats.add(am);
+                System.out.println("customMats: "+cm++);
+                Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
+            }
+        }
+    }
+
+    private static void findBestCustomMat()
+    {
+        int m1CenterX = (int)(p1.x/m2Scale);
+        int m1CenterY = (int)(p1.y/m2Scale);
+        int m2CenterY;
+        int m1StartX = m1CenterX, m1StartY, m2StartX=0, m2StartY;
+        int commonRows, commonColumns;
+        CustomMat bestCustomMat = new CustomMat();
+        bestCustomMat.avgPixelDifference = Double.MAX_VALUE;
+        int counter=1;
+        for (CustomMat m: customMats)
+        {
+            m2CenterY = (int)(p2.y/m2Scale*m.scale);
+            commonColumns = m.width() < m1.width()-m1CenterX ? m.width() : m1.width()-m1CenterX;
+            commonRows = m.height()-m2CenterY < m1.height()-m1CenterY ? m.height()-m2CenterY : m1.height()-m1CenterY;
+            if (m1CenterY < m2CenterY)
+            {
+                m1StartY = 0;
+                m2StartY = m2CenterY-m1CenterY;
+                commonRows += m1CenterY;
+            }
+            else
+            {
+                m1StartY = m1CenterY-m2CenterY;
+                m2StartY = 0;
+                commonRows += m2CenterY;
+            }
+            int allComparedPixels = 0;
+            for (int y = 0; y < commonRows; y++)
+            {
+                int lineComparedPixels = 0;
+                for (int x = 0; x < commonColumns && lineComparedPixels<10; x++)
+                {
+                    double pixelDifference = comparePixels(m1.get(m1StartY+y, m1StartX+x ), m.get(m2StartY+y, m2StartX+x));
+                    if (pixelDifference != -1)
+                    {
+                        m.avgPixelDifference += pixelDifference;
+                        lineComparedPixels++;
+                    }
+                }
+                allComparedPixels+=lineComparedPixels;
+            }
+            m.avgPixelDifference /= allComparedPixels;
+            if (m.avgPixelDifference < bestCustomMat.avgPixelDifference)
+                bestCustomMat = m;
+            System.out.println("CustomMat: "+counter++ +" Scale: "+m.scale+" Angle: "+m.angle+" avgPixelDifference: "+m.avgPixelDifference);
+        }
+        System.out.println("Lowest custom mat avg pixel difference: "+bestCustomMat.avgPixelDifference+" Scale: "+bestCustomMat.scale+" Angle: "+bestCustomMat.angle);
+    }
+
+
+    private static double comparePixels(double[] rgb1, double[] rgb2)
+    {
+        if (rgb2[0]+rgb2[1]+rgb2[2]==0)
+            return -1;
+        double difference = 0.0;
+        difference += Math.abs(rgb1[0]-rgb2[0]);
+        difference += Math.abs(rgb1[1]-rgb2[1]);
+        difference += Math.abs(rgb1[2]-rgb2[2]);
+        return difference;
+    }
+
     public static Mat stitch (Mat mat1, Mat mat2)
     {
-        m1 = mat1;
-        m2 = mat2;
+        // m1 i m2 beda pomniejszane w celu przyspieszenia sprawdzania poprawnosci zszywania,
+        // om1 i om2 beda wykorzystane na koniec by stworzyc zszyty obraz oryginalnej wielkości
+        m1 = om1 = mat1.clone();
+        m2 = om2 = mat2.clone();
         m3 = new Mat();
         Core.hconcat(Arrays.asList(m1,m2),m3);
+        double m3width = m3.width();
+        scale = 1.0;
+        while (m3width*scale>3000)
+        {
+            scale *= 0.5;
+        }
         Stage window = new Stage();
         window.initModality(Modality.APPLICATION_MODAL);
         window.setTitle("Zszywanie dwóch obrazów");
@@ -55,28 +153,8 @@ public class Stitcher
         Button confirmationButton = new Button("ok");
         confirmationButton.setDisable(true);
         confirmationButton.setOnAction(event -> {
-            customMats = new ArrayList<>();
-            m2 = m2.submat(Range.all (), new Range((int)(p2.x-m1.width()), m2.width()) );     // kadrowanie dopasowywanego obrazu od zaznaczonego punktu w prawo
-            double m2Scale = 1.0;
-            if (m2.width() >= 2*M2WIDTH) {
-                m2Scale = m2.width() / M2WIDTH;
-                Imgproc.resize(m2, m2, new Size(M2WIDTH, m2.height()/m2Scale));
-            }
-            int cm = 1;
-            for (double scale = 0.9; scale <= 1.10; scale += 0.01)
-            {
-                Mat sm = new Mat();
-                Imgproc.resize(m2, sm, new Size(m2.width()*scale, m2.height()*scale), 0,0, INTER_NEAREST);      //tworzenie 21 różnych wersji wielkości dopasowywanego obrazu
-                double yCenter = p2.y/m2Scale*scale;                                                                //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
-                for (double angle = -4; angle<=4; angle += 1.0)
-                {
-                    Mat am = new Mat();
-                    Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_LANCZOS4);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
-                    customMats.add(am);
-                    System.out.println("customMats: "+cm++);
-                    Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
-                }
-            }
+            createCustomMats();
+            findBestCustomMat();
         });
         matOfByte = new MatOfByte();
         canvas = new Canvas(m1.width()+m2.width(), m1.height());
@@ -133,59 +211,17 @@ public class Stitcher
 
     private static void scaleUp()
     {
-        if (scale < 16)
+        if (m3.width()*scale < 10000 || scale<1.0) {
             scale *= 2;
-        draw();
+            draw();
+        }
     }
 
     private static void scaleDown()
     {
-        if (scale > 1.0/16.0)
+        if (m3.width()*scale > 500) {
             scale *= 0.5;
-        draw();
-    }
-
-    //funkcja tworząca jedną macierz pikseli z dwóch
-/*    public static Mat stitch(Mat m1, Mat m2)
-    {
-        int bestColumnNr = 0;
-        int bestColumnScore = Integer.MAX_VALUE;
-        int columnScore;
-        double[] rgb1, rgb2;
-
-        for (int column = 0; column < m1.width(); column++)
-        {
-            columnScore=0;
-            for (int row = 0; row < m1.height(); row++)
-            {
-                rgb1 = m1.get(row, column);
-                rgb2 = m2.get(row, 0);
-                columnScore += getPixelScore(rgb1, rgb2);
-            }
-
-            if (columnScore<bestColumnScore)
-            {
-                bestColumnNr = column;
-                bestColumnScore = columnScore;
-            }
+            draw();
         }
-        double maxdifference = m1.height()*3*255;
-        double similarity = (maxdifference-bestColumnScore)/maxdifference*100;
-        System.out.println("Podobieństwo kolumny: "+similarity+"%");
-
-        Mat m = new Mat();
-        Core.hconcat(Arrays.asList(m1.submat(0,m1.height(),0,bestColumnNr),m2),m);
-        System.out.println(m.width());
-        return m;
-    }*/
-
-    //zwraca różnicę między dwoma pikselami na podstawie ich wartości rgb
-    private static int getPixelScore(double[] rgb1, double[] rgb2)
-    {
-        double score = 0.0;
-        score += Math.abs(rgb1[0]-rgb2[0]);
-        score += Math.abs(rgb1[1]-rgb2[1]);
-        score += Math.abs(rgb1[2]-rgb2[2]);
-        return (int)score;
     }
 }

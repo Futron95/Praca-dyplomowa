@@ -19,9 +19,6 @@ import static org.opencv.imgproc.Imgproc.*;
 
 /*TODO
     pokazywanie przyblizenia procentowo
-    zmniejszenie porównywanych matów
-    wykadrowanie porównywanego mata do kilku pikseli
-
 */
 public class Controller {
     @FXML
