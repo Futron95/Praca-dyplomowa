@@ -8,24 +8,28 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 
-import static org.opencv.imgproc.Imgproc.COLOR_HSV2RGB;
-import static org.opencv.imgproc.Imgproc.COLOR_RGB2HSV;
+import static org.opencv.imgproc.Imgproc.*;
 
+/*TODO
+    pokazywanie przyblizenia procentowo
+    zmniejszenie porównywanych matów
+    wykadrowanie porównywanego mata do kilku pikseli
+
+*/
 public class Controller {
     @FXML
     private Canvas canvas;
     private GraphicsContext gc;
-    private Mat m;    //tablica macierzy pixeli obrazu
-    private Mat[] mats;
+    private Mat m;
+    private float scale;
+    private Mat[] mats;             //tablica macierzy pixeli obrazu, umożliwia cofanie zmian
     private int currentM, backMs, forwardMs;
     private MatOfByte byteMat;
     private String filePath;
@@ -53,9 +57,15 @@ public class Controller {
     private ImageView back;
     @FXML
     private ImageView forward;
-
+    @FXML
+    private ImageView zoomin;
+    @FXML
+    private ImageView zoomout;
+    @FXML
+    private ImageView rotate;
 
     private Encoder encoder;
+
     static{
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
@@ -71,16 +81,12 @@ public class Controller {
         if(selectedFile != null){
             filePath = selectedFile.getPath();
             System.out.println("Sciezka: "+filePath);
-            currentM = 0;
-            backMs = 0;
-            forwardMs=0;
-            m = Imgcodecs.imread(filePath);
-            mats = new Mat[11];
-            mats[currentM] = m.clone();
+            resetMats();
             byteMat = new MatOfByte();
             canvas.setHeight(m.height());
             canvas.setWidth(m.width());
             gc = canvas.getGraphicsContext2D();
+            scale = 1;
             drawImage(false);
             enableButtons();
         } else {
@@ -88,9 +94,38 @@ public class Controller {
         }
     }
 
+    private void resetMats()
+    {
+        currentM = 0;
+        backMs = 0;
+        forwardMs=0;
+        back.setDisable(true);
+        forward.setDisable(true);
+        m = Imgcodecs.imread(filePath);
+        mats = new Mat[11];
+        mats[currentM] = m.clone();
+    }
+
+    private Mat getScaleMat()
+    {
+        if (scale==1) {
+            canvas.setHeight(m.height());
+            canvas.setWidth(m.width());
+            return m;
+        }
+        int width = (int) (scale*m.width());
+        int height = (int) (scale*m.height());
+        Mat sm = new Mat();
+        Size scaledSize = new Size(width,height);
+        Imgproc.resize(m, sm, scaledSize, 0,0,INTER_NEAREST);
+        canvas.setHeight(sm.height());
+        canvas.setWidth(sm.width());
+        return sm;
+    }
+
     private void drawImage(boolean change)
     {
-        Imgcodecs.imencode(".bmp", m, byteMat);
+        Imgcodecs.imencode(".bmp", getScaleMat(), byteMat);
         gc.drawImage(new Image(new ByteArrayInputStream(byteMat.toArray())),0,0);
         if (change==true) {
             currentM = (currentM + 1) % 11;
@@ -105,6 +140,7 @@ public class Controller {
         }
     }
 
+    //cofanie zmian
     public void undo()
     {
         currentM = currentM-1;
@@ -126,6 +162,7 @@ public class Controller {
         }
     }
 
+    //ponowne wprowadzenie cofniętych zmian
     public void redo()
     {
         currentM = (currentM+1)%11;
@@ -226,6 +263,26 @@ public class Controller {
         drawImage(true);
     }
 
+    public void scaleUp()
+    {
+        if (scale < 16)
+            scale *= 2;
+        drawImage(false);
+    }
+
+    public void scaleDown()
+    {
+        if (scale > 1.0/16.0)
+            scale *= 0.5;
+        drawImage(false);
+    }
+
+    public void rotateImg()
+    {
+        Imgproc.warpAffine(m,m, Imgproc.getRotationMatrix2D(new Point(m.width()/2, m.height()/2), -5.0, 1.0),m.size(), INTER_LANCZOS4);
+        drawImage(true);
+    }
+
     public void stitchImg()
     {
         Mat m2;
@@ -241,21 +298,36 @@ public class Controller {
             canvas.setWidth(m.width());
             drawImage(true);
         } else {
-            System.out.println("Plik niepoprawny!");
+            System.out.println("Nie wczytano poprawnego pliku!");
         }
     }
 
     private void enableButtons()
     {
         brightnessUp.setDisable(false);
+        brightnessUp.setImage(new Image(".\\icons\\brightness up.png"));
         brightnessDown.setDisable(false);
+        brightnessDown.setImage(new Image(".\\icons\\brightness down.png"));
         contrastDown.setDisable(false);
+        contrastDown.setImage(new Image(".\\icons\\contrast down.png"));
         contrastUp.setDisable(false);
+        contrastUp.setImage(new Image(".\\icons\\contrast up.png"));
         saturationUp.setDisable(false);
+        saturationUp.setImage(new Image(".\\icons\\saturation up.png"));
         saturationDown.setDisable(false);
+        saturationDown.setImage(new Image(".\\icons\\saturation down.png"));
+        zoomin.setDisable(false);
+        zoomin.setImage(new Image(".\\icons\\zoomin.png"));
+        zoomout.setDisable(false);
+        zoomout.setImage(new Image(".\\icons\\zoomout.png"));
+        rotate.setDisable(false);
+        rotate.setImage(new Image(".\\icons\\rotate.png"));
         save.setDisable(false);
-        encode.setDisable(false);
-        decode.setDisable(false);
+        if (!filePath.substring(filePath.length()-3).equals("jpg"))     //szyfrowanie i deszyfrowanie umożliwione jest tylko gdy rozszerzenie inne niz jpg poniewaz kompresja uniemożliwia poprawne odkodowanie
+        {
+            encode.setDisable(false);
+            decode.setDisable(false);
+        }
         stitchingMenuItem.setDisable(false);
     }
 
@@ -336,5 +408,35 @@ public class Controller {
     public void forwardReleased()
     {
         forward.setImage(new Image(".\\icons\\forward.png"));
+    }
+
+    public void zoominPressed()
+    {
+        zoomin.setImage(new Image(".\\icons\\zoomin2.png"));
+    }
+
+    public void zoominReleased()
+    {
+        zoomin.setImage(new Image(".\\icons\\zoomin.png"));
+    }
+
+    public void zoomoutPressed()
+    {
+        zoomout.setImage(new Image(".\\icons\\zoomout2.png"));
+    }
+
+    public void zoomoutReleased()
+    {
+        zoomout.setImage(new Image(".\\icons\\zoomout.png"));
+    }
+
+    public void rotatePressed()
+    {
+        rotate.setImage(new Image(".\\icons\\rotate2.png"));
+    }
+
+    public void rotateReleased()
+    {
+        rotate.setImage(new Image(".\\icons\\rotate.png"));
     }
 }

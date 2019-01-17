@@ -55,32 +55,32 @@
                <children>
                   <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="109.0" layoutY="4.0" onMouseClicked="#decreaseBrightness" onMousePressed="#brightnessDownPressed" onMouseReleased="#brightnessDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/brightness%20down.png" />
+                        <Image url="@../icons/brightness%20down3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="152.0" layoutY="4.0" onMouseClicked="#increaseBrightness" onMousePressed="#brightnessUpPressed" onMouseReleased="#brightnessUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/brightness%20up.png" />
+                        <Image url="@../icons/brightness%20up3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="235.0" layoutY="4.0" onMouseClicked="#increaseContrast" onMousePressed="#contrastUpPressed" onMouseReleased="#contrastUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/contrast%20up.png" />
+                        <Image url="@../icons/contrast%20up3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="192.0" layoutY="4.0" onMouseClicked="#decreaseContrast" onMousePressed="#contrastDownPressed" onMouseReleased="#contrastDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/contrast%20down.png" />
+                        <Image url="@../icons/contrast%20down3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="282.0" layoutY="4.0" onMouseClicked="#decreaseSaturation" onMousePressed="#saturationDownPressed" onMouseReleased="#saturationDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/saturation%20down.png" />
+                        <Image url="@../icons/saturation%20down3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="325.0" layoutY="4.0" onMouseClicked="#increaseSaturation" onMousePressed="#saturationUpPressed" onMouseReleased="#saturationUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/saturation%20up.png" />
+                        <Image url="@../icons/saturation%20up3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="back" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="10.0" layoutY="4.0" onMouseClicked="#undo" onMousePressed="#backPressed" onMouseReleased="#backReleased" pickOnBounds="true" preserveRatio="true">
@@ -91,6 +91,21 @@
                   <ImageView fx:id="forward" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="46.0" layoutY="4.0" onMouseClicked="#redo" onMousePressed="#forwardPressed" onMouseReleased="#forwardReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/forward3.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="zoomin" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="408.0" layoutY="4.0" onMouseClicked="#scaleUp" onMousePressed="#zoominPressed" onMouseReleased="#zoominReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/zoomin3.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="zoomout" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="368.0" layoutY="4.0" onMouseClicked="#scaleDown" onMousePressed="#zoomoutPressed" onMouseReleased="#zoomoutReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/zoomout3.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="rotate" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="450.0" layoutY="4.0" onMouseClicked="#rotateImg" onMousePressed="#rotatePressed" onMouseReleased="#rotateReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/rotate3.png" />
                      </image>
                   </ImageView>
                </children>
