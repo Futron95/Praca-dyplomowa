@@ -19,13 +19,13 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.opencv.imgproc.Imgproc.INTER_LANCZOS4;
 import static org.opencv.imgproc.Imgproc.INTER_NEAREST;
+import static org.opencv.imgproc.Imgproc.getRotationMatrix2D;
 
 public class Stitcher
 {
     private static Point p1, p2;
-    private static Mat om1, om2, m1, m2, m3;
+    private static Mat om1, om2, m1, m2, m3, preparedMat, finalMat;
     private static GraphicsContext gc;
     private static MatOfByte matOfByte;
     private static ArrayList<CustomMat> customMats;
@@ -57,22 +57,22 @@ public class Stitcher
             for (double angle = -4; angle<=4; angle += 1.0)
             {
                 CustomMat am = new CustomMat();
-                Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_LANCZOS4);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
+                Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_NEAREST);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
                 am.angle = angle;
                 am.scale = scale;
                 customMats.add(am);
-                System.out.println("customMats: "+cm++);
-                Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
+                //System.out.println("customMats: "+cm++);
+                //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
             }
         }
     }
 
-    private static void findBestCustomMat()
+    private static CustomMat findBestCustomMat()
     {
         int m1CenterX = (int)(p1.x/m2Scale);
         int m1CenterY = (int)(p1.y/m2Scale);
         int m2CenterY;
-        int m1StartX = m1CenterX, m1StartY, m2StartX=0, m2StartY;
+        int m1StartX = m1CenterX, m1StartY, m2StartY;
         int commonRows, commonColumns;
         CustomMat bestCustomMat = new CustomMat();
         bestCustomMat.avgPixelDifference = Double.MAX_VALUE;
@@ -100,7 +100,7 @@ public class Stitcher
                 int lineComparedPixels = 0;
                 for (int x = 0; x < commonColumns && lineComparedPixels<10; x++)
                 {
-                    double pixelDifference = comparePixels(m1.get(m1StartY+y, m1StartX+x ), m.get(m2StartY+y, m2StartX+x));
+                    double pixelDifference = comparePixels(m1.get(m1StartY+y, m1StartX+x ), m.get(m2StartY+y, x));
                     if (pixelDifference != -1)
                     {
                         m.avgPixelDifference += pixelDifference;
@@ -112,9 +112,12 @@ public class Stitcher
             m.avgPixelDifference /= allComparedPixels;
             if (m.avgPixelDifference < bestCustomMat.avgPixelDifference)
                 bestCustomMat = m;
-            System.out.println("CustomMat: "+counter++ +" Scale: "+m.scale+" Angle: "+m.angle+" avgPixelDifference: "+m.avgPixelDifference);
+            //System.out.println("CustomMat: "+counter++ +" Scale: "+m.scale+" Angle: "+m.angle+" avgPixelDifference: "+m.avgPixelDifference);
+            //Imgproc.rectangle(m, new Point(0, m2CenterY-2), new Point(2, m2CenterY+2), new Scalar(0,255,0));
+            //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\Scale "+m.scale+" angle"+m.angle+"y "+m2CenterY+".jpg", m);
         }
         System.out.println("Lowest custom mat avg pixel difference: "+bestCustomMat.avgPixelDifference+" Scale: "+bestCustomMat.scale+" Angle: "+bestCustomMat.angle);
+        return bestCustomMat;
     }
 
 
@@ -133,8 +136,10 @@ public class Stitcher
     {
         // m1 i m2 beda pomniejszane w celu przyspieszenia sprawdzania poprawnosci zszywania,
         // om1 i om2 beda wykorzystane na koniec by stworzyc zszyty obraz oryginalnej wielkości
-        m1 = om1 = mat1.clone();
-        m2 = om2 = mat2.clone();
+        m1 = mat1.clone();
+        om1 = mat1.clone();
+        m2 = mat2.clone();
+        om2 = mat2.clone();
         m3 = new Mat();
         Core.hconcat(Arrays.asList(m1,m2),m3);
         double m3width = m3.width();
@@ -153,8 +158,13 @@ public class Stitcher
         Button confirmationButton = new Button("ok");
         confirmationButton.setDisable(true);
         confirmationButton.setOnAction(event -> {
+            confirmationButton.setDisable(true);
+            canvas.setDisable(true);
             createCustomMats();
-            findBestCustomMat();
+            CustomMat bcm = findBestCustomMat();
+            createPreparedMat(bcm);
+            createFinalMat();
+            window.close();
         });
         matOfByte = new MatOfByte();
         canvas = new Canvas(m1.width()+m2.width(), m1.height());
@@ -191,7 +201,88 @@ public class Stitcher
         Scene scene = new Scene(layout);
         window.setScene(scene);
         window.showAndWait();
-        return m1;
+        return finalMat;
+    }
+
+    private static void createFinalMat()
+    {
+        double xBorder = p1.x-p2.x;
+        double yBorder = p1.y-p2.y;
+        finalMat = new Mat(om1.height(), (int)(xBorder+preparedMat.width()), om1.type());
+        for (int y = 0; y < finalMat.height(); y++)
+            for (int x = 0; x < finalMat.width(); x++)
+            {
+                double[] rgb1 = om1.get(y,x);
+                if (x<xBorder)
+                    finalMat.put(y,x,rgb1);
+                else
+                {
+                    double[] rgb2 = preparedMat.get((int)(y-yBorder),(int)(x-xBorder));
+                    if ((rgb2==null || rgb2[0] + rgb2[1] + rgb2[2] == 0) && rgb1!=null)
+                        finalMat.put(y,x,rgb1);
+                    else
+                        finalMat.put(y,x, rgb2);
+                }
+            }
+    }
+
+    private static Point getRotatedPointCoordinates(Point p, double angle)
+    {
+        double cos = Math.cos(Math.toRadians(angle));
+        double sin = Math.sin(Math.toRadians(angle));
+        double x = p.x*cos - p.y*sin;
+        double y = p.x*sin + p.y*cos;
+        return new Point(x,y);
+    }
+
+    private static Size getBoundingBoxSize(Mat m, double angle)
+    {
+        Point p0 = new Point(0,0);
+        Point p1 = new Point( 0, m.height());
+        Point p2 = new Point (m.width(), m.height());
+        Point p3 = new Point( m.width(), 0);
+        p1 = getRotatedPointCoordinates(p1, angle);
+        p2 = getRotatedPointCoordinates(p2, angle);
+        p3 = getRotatedPointCoordinates(p3, angle);
+        double minX = p0.x < p1.x ? p0.x : p1.x;
+        if (p2.x<minX) minX = p2.x;
+        if (p3.x<minX) minX = p3.x;
+        double minY = p0.y < p1.y ? p0.y : p1.y;
+        if (p2.y<minY) minY = p2.y;
+        if (p3.y<minY) minY = p3.y;
+        double maxX = p0.x > p1.x ? p0.x : p1.x;
+        if (p2.x>maxX) maxX = p2.x;
+        if (p3.x>maxX) maxX = p3.x;
+        double maxY = p0.y > p1.y ? p0.y : p1.y;
+        if (p2.y>maxY) maxY = p2.y;
+        if (p3.y>maxY) maxY = p3.y;
+        double width = Math.abs(minX-maxX);
+        double height = Math.abs(minY-maxY);
+        return new Size(width, height);
+    }
+
+    private static void createPreparedMat(CustomMat bcm) {
+        om2 = om2.submat(Range.all(), new Range((int) (p2.x-om1.width()), om2.width()-1));
+        Imgproc.resize(om2, om2, new Size(om2.width()*bcm.scale, om2.height()*bcm.scale));
+        Size newSize = getBoundingBoxSize(om2, bcm.angle);
+        Point translateCoordinates = new Point((int)((newSize.width-om2.width())/2),(int)((newSize.height-om2.height())/2));
+        p2 = new Point(0, Stitcher.p2.y*bcm.scale);
+        Point centerPoint = new Point(newSize.width/2, newSize.height/2);
+        if (bcm.angle == 0) {
+            preparedMat = om2;
+            return;
+        }
+        p2.x += translateCoordinates.x-centerPoint.x;
+        p2.y += translateCoordinates.y-centerPoint.y;
+        p2 = getRotatedPointCoordinates(p2, -bcm.angle);
+        p2.x += centerPoint.x;
+        p2.y += centerPoint.y;
+        preparedMat = new Mat(newSize, om2.type());
+        Rect roi = new Rect(translateCoordinates, om2.size());
+        om2.copyTo(new Mat(preparedMat, roi));
+        Imgproc.warpAffine(preparedMat, preparedMat, getRotationMatrix2D(centerPoint, bcm.angle, 1.0), preparedMat.size(), INTER_NEAREST);
+        //Imgproc.rectangle(preparedMat, new Point(p2.x-2, p2.y-2), new Point(p2.x+2, p2.y+2), new Scalar(255,0,0));
+        Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\finalMatCommonPoint.jpg", preparedMat);
     }
 
     private static Mat getDisplayMat() {
