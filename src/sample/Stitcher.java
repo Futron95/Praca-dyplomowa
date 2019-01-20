@@ -19,6 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static org.opencv.core.Core.flip;
 import static org.opencv.imgproc.Imgproc.INTER_NEAREST;
 import static org.opencv.imgproc.Imgproc.getRotationMatrix2D;
 
@@ -32,6 +33,7 @@ public class Stitcher
     private static final int M2TARGET_WIDTH = 100;
     private static double scale, m2Scale = 1.0;
     private static Canvas canvas;
+    private static boolean flipped;
 
     private static void draw()
     {
@@ -41,8 +43,31 @@ public class Stitcher
 
     private static void createCustomMats()
     {
+        flipped = false;
+        if (p1.x<m1.width()/2)
+        {
+            flipped = true;
+            Mat tempMat = new Mat();
+            flip(m1, tempMat, 1);
+            m1 = tempMat.clone();
+            flip(m2,tempMat, 1);
+            m2 = tempMat.clone();
+            p1.x = m1.width()-p1.x;
+            p2.x = m2.width()-p2.x;
+        }
+        if (p1.x<p2.x)
+        {
+            Mat tempMat = m1;
+            m1 = m2;
+            m2 = tempMat;
+            Point tempPoint = p1;
+            p1 = p2;
+            p2 = tempPoint;
+        }
+        om1 = m1.clone();
+        om2 = m2.clone();
         customMats = new ArrayList<>();
-        m2 = m2.submat(Range.all (), new Range((int)(p2.x-m1.width()), m2.width()-(int)(m1.width()-p1.x)) );     // kadrowanie dopasowywanego obrazu od zaznaczonego punktu do szerokości fragmentu pierwszego obrazu z którym będzie porównywany
+        m2 = m2.submat(Range.all (), new Range((int)(p2.x), m2.width()-(int)(m1.width()-p1.x)) );     // kadrowanie dopasowywanego obrazu od zaznaczonego punktu do szerokości fragmentu pierwszego obrazu z którym będzie porównywany
         if (m2.width() >= 2* M2TARGET_WIDTH) {
             m2Scale = m2.width() / M2TARGET_WIDTH;
             Imgproc.resize(m2, m2, new Size(M2TARGET_WIDTH, m2.height()/m2Scale));
@@ -137,9 +162,8 @@ public class Stitcher
         // m1 i m2 beda pomniejszane w celu przyspieszenia sprawdzania poprawnosci zszywania,
         // om1 i om2 beda wykorzystane na koniec by stworzyc zszyty obraz oryginalnej wielkości
         m1 = mat1.clone();
-        om1 = mat1.clone();
         m2 = mat2.clone();
-        om2 = mat2.clone();
+        finalMat = mat1;
         m3 = new Mat();
         Core.hconcat(Arrays.asList(m1,m2),m3);
         double m3width = m3.width();
@@ -175,7 +199,7 @@ public class Stitcher
                     if (x <= m1.width()*scale)
                         p1 = new Point(x/scale,y/scale);
                     else
-                        p2 = new Point (x/scale,y/scale);
+                        p2 = new Point (x/scale-m1.width(),y/scale);
                     draw();
                     if (p1!=null && p2!=null)
                         confirmationButton.setDisable(false);
@@ -204,26 +228,76 @@ public class Stitcher
         return finalMat;
     }
 
+    private static double[] getGradientPixel (double[] rgb1, double[] rgb2, double gradientCounter)
+    {
+        if (rgb1==null)
+            return rgb2;
+        double[] returnRgb = new double[3];
+        returnRgb[0] = rgb1[0]*gradientCounter+ rgb2[0]*(1.0-gradientCounter);
+        returnRgb[1] = rgb1[1]*gradientCounter+ rgb2[1]*(1.0-gradientCounter);
+        returnRgb[2] = rgb1[2]*gradientCounter+ rgb2[2]*(1.0-gradientCounter);
+        return returnRgb;
+    }
+
     private static void createFinalMat()
     {
-        double xBorder = p1.x-p2.x;
-        double yBorder = p1.y-p2.y;
-        finalMat = new Mat(om1.height(), (int)(xBorder+preparedMat.width()), om1.type());
+        int xBorder = (int)p1.x-(int)p2.x;
+        int yBorder = (int)p1.y-(int)p2.y;
+        double[] rgb1, rgb2;
+        double gradientCounter;
+        finalMat = new Mat(om1.height(), xBorder+preparedMat.width(), om1.type());
         for (int y = 0; y < finalMat.height(); y++)
+        {
+            gradientCounter = 0.1;
             for (int x = 0; x < finalMat.width(); x++)
             {
-                double[] rgb1 = om1.get(y,x);
-                if (x<xBorder)
-                    finalMat.put(y,x,rgb1);
+                if (x<om1.width())
+                    rgb1 = om1.get(y, x);
+                else
+                    rgb1 = null;
+                if (x < xBorder)
+                    finalMat.put(y, x, rgb1);
                 else
                 {
-                    double[] rgb2 = preparedMat.get((int)(y-yBorder),(int)(x-xBorder));
-                    if ((rgb2==null || rgb2[0] + rgb2[1] + rgb2[2] == 0) && rgb1!=null)
-                        finalMat.put(y,x,rgb1);
+                    int x2 = x - xBorder;
+                    int y2 = y - yBorder;
+                    if (y2<0 || x2<0)
+                    {
+                        if (rgb1!=null)
+                            finalMat.put(y, x, rgb1);
+                        else
+                            finalMat.put(y, x, new double[]{0, 0, 0});
+                    }
                     else
-                        finalMat.put(y,x, rgb2);
+                    {
+                        rgb2 = preparedMat.get(y2, x2);
+                        if (rgb2[0] + rgb2[1] + rgb2[2] == 0) {
+                            if (rgb1 != null)
+                                finalMat.put(y, x, rgb1);
+                            else
+                                finalMat.put(y, x, new double[]{0, 0, 0});
+                        }
+                        else {
+                            if (gradientCounter<1.0) {
+                                finalMat.put(y, x, getGradientPixel(rgb1, rgb2, gradientCounter));
+                                gradientCounter += 0.1;
+                            }
+                            else
+                                finalMat.put(y, x, rgb2);
+                        }
+                    }
+
                 }
             }
+        }
+        if (flipped)
+        {
+            Mat tempMat = new Mat();
+            flip(finalMat, tempMat, 1);
+            finalMat = tempMat;
+        }
+        p1 = null;
+        p2 = null;
     }
 
     private static Point getRotatedPointCoordinates(Point p, double angle)
@@ -262,7 +336,7 @@ public class Stitcher
     }
 
     private static void createPreparedMat(CustomMat bcm) {
-        om2 = om2.submat(Range.all(), new Range((int) (p2.x-om1.width()), om2.width()-1));
+        om2 = om2.submat(Range.all(), new Range((int) (p2.x), om2.width()-1));
         Imgproc.resize(om2, om2, new Size(om2.width()*bcm.scale, om2.height()*bcm.scale));
         Size newSize = getBoundingBoxSize(om2, bcm.angle);
         Point translateCoordinates = new Point((int)((newSize.width-om2.width())/2),(int)((newSize.height-om2.height())/2));
@@ -296,7 +370,7 @@ public class Stitcher
         if (p1!=null)
             Imgproc.rectangle(sm, new Point(scale*p1.x-2, scale*p1.y-2), new Point(scale*p1.x+2, scale*p1.y+2), new Scalar(0,255,0));
         if (p2!=null)
-            Imgproc.rectangle(sm, new Point(scale*p2.x-2, scale*p2.y-2), new Point(scale*p2.x+2, scale*p2.y+2), new Scalar(0,255,0));
+            Imgproc.rectangle(sm, new Point(scale*(p2.x+m1.width())-2, scale*p2.y-2), new Point(scale*(p2.x+m1.width())+2, scale*p2.y+2), new Scalar(0,255,0));
         return sm;
     }
 

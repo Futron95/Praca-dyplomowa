@@ -291,9 +291,12 @@ public class Controller {
         File selectedFile = fc.showOpenDialog(null);
         if(selectedFile != null){
             m2 = Imgcodecs.imread(selectedFile.getAbsolutePath());
-            m = Stitcher.stitch(m,m2);
-            canvas.setWidth(m.width());
-            drawImage(true);
+            Mat newM = Stitcher.stitch(m,m2);
+            if (newM!=m) {
+                m=newM;
+                canvas.setWidth(m.width());
+                drawImage(true);
+            }
         } else {
             System.out.println("Nie wczytano poprawnego pliku!");
         }
