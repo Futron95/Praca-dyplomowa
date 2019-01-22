@@ -31,12 +31,13 @@
                   <items>
                     <MenuItem mnemonicParsing="false" onAction="#FileChooseAction" text="Otwórz" />
                      <MenuItem fx:id="save" disable="true" mnemonicParsing="false" onAction="#saveImage" text="Zapisz" />
-                     <MenuItem disable="true" mnemonicParsing="false" text="Zamknij" />
+                     <MenuItem fx:id="closeMenuItem" disable="true" mnemonicParsing="false" onAction="#closeImage" text="Zamknij" />
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Edycja">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Cofnij" />
+                    <MenuItem fx:id="undoMenuItem" disable="true" mnemonicParsing="false" onAction="#undo" text="Cofnij" />
+                        <MenuItem fx:id="redoMenuItem" disable="true" mnemonicParsing="false" onAction="#redo" text="Powtórz" />
                         <MenuItem fx:id="encode" disable="true" mnemonicParsing="false" onAction="#encodeImg" text="Szyfruj" />
                         <MenuItem fx:id="decode" disable="true" mnemonicParsing="false" onAction="#openDecodeWindow" text="Odszyfruj" />
                         <MenuItem fx:id="stitchingMenuItem" disable="true" mnemonicParsing="false" onAction="#stitchImg" text="Doklej obraz" />
@@ -84,14 +85,14 @@
                         <Image url="@../icons/saturation%20up3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="back" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="10.0" layoutY="4.0" onMouseClicked="#undo" onMousePressed="#backPressed" onMouseReleased="#backReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="undoImageView" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="10.0" layoutY="4.0" onMouseClicked="#undo" onMousePressed="#undoPressed" onMouseReleased="#undoReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/back3.png" />
+                        <Image url="@../icons/undo3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="forward" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="46.0" layoutY="4.0" onMouseClicked="#redo" onMousePressed="#forwardPressed" onMouseReleased="#forwardReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="redoImageView" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="46.0" layoutY="4.0" onMouseClicked="#redo" onMousePressed="#redoPressed" onMouseReleased="#redoReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../icons/forward3.png" />
+                        <Image url="@../icons/redo3.png" />
                      </image>
                   </ImageView>
                   <ImageView fx:id="zoomin" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="446.0" layoutY="4.0" onMouseClicked="#scaleUp" onMousePressed="#zoominPressed" onMouseReleased="#zoominReleased" pickOnBounds="true" preserveRatio="true">

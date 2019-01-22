@@ -49,9 +49,9 @@ public class Controller {
     @FXML
     private MenuItem stitchingMenuItem;
     @FXML
-    private ImageView back;
+    private ImageView undoImageView;
     @FXML
-    private ImageView forward;
+    private ImageView redoImageView;
     @FXML
     private ImageView zoomin;
     @FXML
@@ -60,6 +60,12 @@ public class Controller {
     private ImageView rotate;
     @FXML
     private Label zoomLabel;
+    @FXML
+    private MenuItem undoMenuItem;
+    @FXML
+    private MenuItem redoMenuItem;
+    @FXML
+    private MenuItem closeMenuItem;
 
     private Encoder encoder;
 
@@ -91,16 +97,17 @@ public class Controller {
         File selectedFile = fc.showOpenDialog(null);
         if(selectedFile != null){
             canvas.setDisable(false);
+            canvas.setVisible(true);
             if (canvas.getOnScroll() == null)
                 setScrollZooming();
             filePath = selectedFile.getPath();
             System.out.println("Sciezka: "+filePath);
             resetMats();
             byteMat = new MatOfByte();
+            scale = 1;
             canvas.setHeight(m.height());
             canvas.setWidth(m.width());
             gc = canvas.getGraphicsContext2D();
-            scale = 1;
             drawImage(false);
             enableButtons();
         } else {
@@ -113,8 +120,12 @@ public class Controller {
         currentM = 0;
         backMs = 0;
         forwardMs=0;
-        back.setDisable(true);
-        forward.setDisable(true);
+        undoImageView.setDisable(true);
+        undoMenuItem.setDisable(true);
+        undoImageView.setImage(new Image(".\\icons\\undo3.png"));
+        redoImageView.setDisable(true);
+        redoMenuItem.setDisable(true);
+        redoImageView.setImage(new Image(".\\icons\\redo3.png"));
         m = Imgcodecs.imread(filePath);
         mats = new Mat[11];
         mats[currentM] = m.clone();
@@ -142,13 +153,20 @@ public class Controller {
         Imgcodecs.imencode(".bmp", getScaleMat(), byteMat);
         gc.drawImage(new Image(new ByteArrayInputStream(byteMat.toArray())),0,0);
         if (change==true) {
+            if (forwardMs>0) {
+                forwardMs = 0;
+                redoImageView.setDisable(true);
+                redoMenuItem.setDisable(true);
+                redoImageView.setImage(new Image(".\\icons\\redo3.png"));
+            }
             currentM = (currentM + 1) % 11;
             mats[currentM] = m.clone();
             if (backMs < 10) {
                 backMs++;
-                if (backMs > 0) {
-                    back.setDisable(false);
-                    back.setImage(new Image(".\\icons\\back.png"));
+                if (undoImageView.isDisabled()) {
+                    undoImageView.setDisable(false);
+                    undoMenuItem.setDisable(false);
+                    undoImageView.setImage(new Image(".\\icons\\undo.png"));
                 }
             }
         }
@@ -164,15 +182,17 @@ public class Controller {
         backMs -= 1;
         if (backMs==0)
         {
-            back.setDisable(true);
-            back.setImage(new Image(".\\icons\\back3.png"));
+            undoImageView.setDisable(true);
+            undoMenuItem.setDisable(true);
+            undoImageView.setImage(new Image(".\\icons\\undo3.png"));
         }
         drawImage(false);
         forwardMs++;
-        if (forward.isDisabled())
+        if (redoImageView.isDisabled())
         {
-            forward.setDisable(false);
-            forward.setImage(new Image(".\\icons\\forward.png"));
+            redoImageView.setDisable(false);
+            redoMenuItem.setDisable(false);
+            redoImageView.setImage(new Image(".\\icons\\redo.png"));
         }
     }
 
@@ -185,14 +205,16 @@ public class Controller {
         forwardMs--;
         if (forwardMs==0)
         {
-            forward.setDisable(true);
-            forward.setImage(new Image(".\\icons\\forward3.png"));
+            redoImageView.setDisable(true);
+            redoMenuItem.setDisable(true);
+            redoImageView.setImage(new Image(".\\icons\\redo3.png"));
         }
         backMs++;
-        if (back.isDisabled())
+        if (undoImageView.isDisabled())
         {
-            back.setDisable(false);
-            back.setImage(new Image(".\\icons\\back.png"));
+            undoImageView.setDisable(false);
+            undoMenuItem.setDisable(false);
+            undoImageView.setImage(new Image(".\\icons\\undo.png"));
         }
     }
 
@@ -326,6 +348,15 @@ public class Controller {
         }
     }
 
+    public void closeImage()
+    {
+        disableButtons();
+        canvas.setDisable(true);
+        canvas.setVisible(false);
+        scale = 1;
+        zoomLabel.setText((int)(scale*100)+"%");
+    }
+
     private void enableButtons()
     {
         brightnessUp.setDisable(false);
@@ -348,12 +379,45 @@ public class Controller {
         rotate.setImage(new Image(".\\icons\\rotate.png"));
         save.setDisable(false);
         zoomLabel.setVisible(true);
+        undoMenuItem.setDisable(false);
+        redoMenuItem.setDisable(false);
+        closeMenuItem.setDisable(false);
         if (!filePath.substring(filePath.length()-3).equals("jpg"))     //szyfrowanie i deszyfrowanie umożliwione jest tylko gdy rozszerzenie inne niz jpg poniewaz kompresja uniemożliwia poprawne odkodowanie
         {
             encode.setDisable(false);
             decode.setDisable(false);
         }
         stitchingMenuItem.setDisable(false);
+    }
+
+    private void disableButtons()
+    {
+        brightnessUp.setDisable(true);
+        brightnessUp.setImage(new Image(".\\icons\\brightness up3.png"));
+        brightnessDown.setDisable(true);
+        brightnessDown.setImage(new Image(".\\icons\\brightness down3.png"));
+        contrastDown.setDisable(true);
+        contrastDown.setImage(new Image(".\\icons\\contrast down3.png"));
+        contrastUp.setDisable(true);
+        contrastUp.setImage(new Image(".\\icons\\contrast up3.png"));
+        saturationUp.setDisable(true);
+        saturationUp.setImage(new Image(".\\icons\\saturation up3.png"));
+        saturationDown.setDisable(true);
+        saturationDown.setImage(new Image(".\\icons\\saturation down3.png"));
+        zoomin.setDisable(true);
+        zoomin.setImage(new Image(".\\icons\\zoomin3.png"));
+        zoomout.setDisable(true);
+        zoomout.setImage(new Image(".\\icons\\zoomout3.png"));
+        rotate.setDisable(true);
+        rotate.setImage(new Image(".\\icons\\rotate3.png"));
+        save.setDisable(true);
+        zoomLabel.setVisible(true);
+        undoMenuItem.setDisable(true);
+        redoMenuItem.setDisable(true);
+        closeMenuItem.setDisable(true);
+        encode.setDisable(true);
+        decode.setDisable(true);
+        stitchingMenuItem.setDisable(true);
     }
 
     public void brightnessDownPressed()
@@ -415,24 +479,24 @@ public class Controller {
         saturationUp.setImage(new Image(".\\icons\\saturation up.png"));
     }
 
-    public void backPressed()
+    public void undoPressed()
     {
-        back.setImage(new Image(".\\icons\\back2.png"));
+        undoImageView.setImage(new Image(".\\icons\\undo2.png"));
     }
 
-    public void backReleased()
+    public void undoReleased()
     {
-        back.setImage(new Image(".\\icons\\back.png"));
+        undoImageView.setImage(new Image(".\\icons\\undo.png"));
     }
 
-    public void forwardPressed()
+    public void redoPressed()
     {
-        forward.setImage(new Image(".\\icons\\forward2.png"));
+        redoImageView.setImage(new Image(".\\icons\\redo2.png"));
     }
 
-    public void forwardReleased()
+    public void redoReleased()
     {
-        forward.setImage(new Image(".\\icons\\forward.png"));
+        redoImageView.setImage(new Image(".\\icons\\redo.png"));
     }
 
     public void zoominPressed()
