@@ -8,6 +8,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -159,8 +160,7 @@ public class Stitcher
 
     public static Mat stitch (Mat mat1, Mat mat2)
     {
-        // m1 i m2 beda pomniejszane w celu przyspieszenia sprawdzania poprawnosci zszywania,
-        // om1 i om2 beda wykorzystane na koniec by stworzyc zszyty obraz oryginalnej wielkości
+        // m1 i m2 to mniejsze wersje obrazów tworzone w celu przyspieszenia sprawdzania poprawnosci zszywania,
         m1 = mat1.clone();
         m2 = mat2.clone();
         finalMat = mat1;
@@ -205,16 +205,7 @@ public class Stitcher
                         confirmationButton.setDisable(false);
                 }
         );
-        canvas.setOnScroll( e ->
-        {
-            if (e.isControlDown())
-            {
-                if (e.getDeltaY()>0)
-                    scaleUp();
-                else
-                    scaleDown();
-            }
-        });
+        canvas.setOnScroll(Stitcher::handle);
         ScrollPane scrollPane = new ScrollPane(canvas);
         scrollPane.setMaxWidth(m1.width()+m2.width()+15);
         gc = canvas.getGraphicsContext2D();
@@ -233,9 +224,9 @@ public class Stitcher
         if (rgb1==null)
             return rgb2;
         double[] returnRgb = new double[3];
-        returnRgb[0] = rgb1[0]*gradientCounter+ rgb2[0]*(1.0-gradientCounter);
-        returnRgb[1] = rgb1[1]*gradientCounter+ rgb2[1]*(1.0-gradientCounter);
-        returnRgb[2] = rgb1[2]*gradientCounter+ rgb2[2]*(1.0-gradientCounter);
+        returnRgb[0] = rgb1[0]*(1.0-gradientCounter)+ rgb2[0]*gradientCounter;
+        returnRgb[1] = rgb1[1]*(1.0-gradientCounter)+ rgb2[1]*gradientCounter;
+        returnRgb[2] = rgb1[2]*(1.0-gradientCounter)+ rgb2[2]*gradientCounter;
         return returnRgb;
     }
 
@@ -309,7 +300,7 @@ public class Stitcher
         return new Point(x,y);
     }
 
-    private static Size getBoundingBoxSize(Mat m, double angle)
+    public static Size getBoundingBoxSize(Mat m, double angle)
     {
         Point p0 = new Point(0,0);
         Point p1 = new Point( 0, m.height());
@@ -387,6 +378,15 @@ public class Stitcher
         if (m3.width()*scale > 500) {
             scale *= 0.5;
             draw();
+        }
+    }
+
+    private static void handle(ScrollEvent e) {
+        if (e.isControlDown()) {
+            if (e.getDeltaY() > 0)
+                scaleUp();
+            else
+                scaleDown();
         }
     }
 }

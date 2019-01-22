@@ -4,6 +4,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -17,9 +18,6 @@ import java.io.File;
 
 import static org.opencv.imgproc.Imgproc.*;
 
-/*TODO
-    pokazywanie przyblizenia procentowo
-*/
 public class Controller {
     @FXML
     private Canvas canvas;
@@ -60,11 +58,27 @@ public class Controller {
     private ImageView zoomout;
     @FXML
     private ImageView rotate;
+    @FXML
+    private Label zoomLabel;
 
     private Encoder encoder;
 
     static{
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
+
+    private void setScrollZooming()
+    {
+        canvas.setOnScroll(event ->
+        {
+            if (event.isControlDown())
+            {
+                if (event.getDeltaY()>0)
+                    scaleUp();
+                else
+                    scaleDown();
+            }
+        });
     }
 
     public void FileChooseAction(ActionEvent event)
@@ -76,6 +90,9 @@ public class Controller {
         fc.getExtensionFilters().add(fileExtensions);
         File selectedFile = fc.showOpenDialog(null);
         if(selectedFile != null){
+            canvas.setDisable(false);
+            if (canvas.getOnScroll() == null)
+                setScrollZooming();
             filePath = selectedFile.getPath();
             System.out.println("Sciezka: "+filePath);
             resetMats();
@@ -262,22 +279,29 @@ public class Controller {
 
     public void scaleUp()
     {
-        if (scale < 16)
+        if (scale < 16) {
             scale *= 2;
+            zoomLabel.setText((int)(scale*100)+"%");
+        }
         drawImage(false);
     }
 
     public void scaleDown()
     {
-        if (scale > 1.0/16.0)
+        if (scale > 1.0/16.0) {
             scale *= 0.5;
+            zoomLabel.setText((int)(scale*100)+"%");
+        }
         drawImage(false);
     }
 
     public void rotateImg()
     {
-        Imgproc.warpAffine(m,m, Imgproc.getRotationMatrix2D(new Point(m.width()/2, m.height()/2), -5.0, 1.0),m.size(), INTER_LANCZOS4);
-        drawImage(true);
+       Rotater rotater = new Rotater(m);
+       m = rotater.rotate();
+       if (rotater.rotated) {
+           drawImage(true);
+       }
     }
 
     public void stitchImg()
@@ -323,6 +347,7 @@ public class Controller {
         rotate.setDisable(false);
         rotate.setImage(new Image(".\\icons\\rotate.png"));
         save.setDisable(false);
+        zoomLabel.setVisible(true);
         if (!filePath.substring(filePath.length()-3).equals("jpg"))     //szyfrowanie i deszyfrowanie umożliwione jest tylko gdy rozszerzenie inne niz jpg poniewaz kompresja uniemożliwia poprawne odkodowanie
         {
             encode.setDisable(false);

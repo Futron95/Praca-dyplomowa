@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.text.*?>
 <?import java.lang.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.*?>
@@ -93,21 +94,26 @@
                         <Image url="@../icons/forward3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="zoomin" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="408.0" layoutY="4.0" onMouseClicked="#scaleUp" onMousePressed="#zoominPressed" onMouseReleased="#zoominReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="zoomin" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="446.0" layoutY="4.0" onMouseClicked="#scaleUp" onMousePressed="#zoominPressed" onMouseReleased="#zoominReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/zoomin3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="zoomout" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="368.0" layoutY="4.0" onMouseClicked="#scaleDown" onMousePressed="#zoomoutPressed" onMouseReleased="#zoomoutReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="zoomout" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="406.0" layoutY="4.0" onMouseClicked="#scaleDown" onMousePressed="#zoomoutPressed" onMouseReleased="#zoomoutReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/zoomout3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="rotate" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="450.0" layoutY="4.0" onMouseClicked="#rotateImg" onMousePressed="#rotatePressed" onMouseReleased="#rotateReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="rotate" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="367.0" layoutY="4.0" onMouseClicked="#rotateImg" onMousePressed="#rotatePressed" onMouseReleased="#rotateReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/rotate3.png" />
                      </image>
                   </ImageView>
+                  <Label fx:id="zoomLabel" layoutX="488.0" layoutY="6.0" prefHeight="24.0" prefWidth="55.0" text="100%" visible="false">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
                </children>
             </Pane>
          </children>
@@ -116,7 +122,7 @@
    <center>
       <ScrollPane prefViewportHeight="370.0" prefViewportWidth="698.0">
          <content>
-            <Canvas fx:id="canvas" height="658.0" width="1277.0">
+            <Canvas fx:id="canvas" disable="true" height="658.0" width="1277.0">
                <cursor>
                   <Cursor fx:constant="DEFAULT" />
                </cursor>
