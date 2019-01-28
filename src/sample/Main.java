@@ -13,6 +13,11 @@ public class Main extends Application {
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         primaryStage.setTitle("Edytor obrazów");
         primaryStage.setScene(new Scene(root));
+        primaryStage.setOnCloseRequest( event -> {
+            if (Controller.currentController.unsavedChanges == true)
+                if (CloseBox.show() != true)
+                    event.consume();
+        });
         primaryStage.show();
     }
 

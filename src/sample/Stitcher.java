@@ -19,6 +19,7 @@ import org.opencv.imgproc.Imgproc;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.opencv.core.Core.flip;
 import static org.opencv.imgproc.Imgproc.INTER_NEAREST;
@@ -34,11 +35,14 @@ public class Stitcher
     private static final int M2TARGET_WIDTH = 100;
     private static double scale, m2Scale = 1.0;
     private static Canvas canvas;
+    private static ScrollPane scrollPane;
     private static boolean flipped;
+    private static int m1CenterX, m1CenterY;
 
     private static void draw()
     {
         Imgcodecs.imencode(".bmp", getDisplayMat(), matOfByte);
+        scrollPane.setMaxWidth(canvas.getWidth()+2);
         gc.drawImage(new Image(new ByteArrayInputStream(matOfByte.toArray())),0,0);
     }
 
@@ -74,37 +78,35 @@ public class Stitcher
             Imgproc.resize(m2, m2, new Size(M2TARGET_WIDTH, m2.height()/m2Scale));
             Imgproc.resize(m1, m1, new Size(m1.width()/m2Scale, m1.height()/m2Scale));
         }
-        int cm = 1;
-        for (double scale = 1.0; scale < 1.21; scale += 0.01)
+        for (double scale = 0.9; scale < 1.21; scale += 0.01)
+            addScaledMats(scale);
+    }
+
+    private static void addScaledMats(double scale)
+    {
+        Mat sm = new Mat();     //nowy obiekt który przechowa przeskalowaną macierz na podstawie której będą tworzone jej wersje z dołożoną rotacją
+        Imgproc.resize(m2, sm, new Size(m2.width()*scale, m2.height()*scale), 0,0, INTER_NEAREST);      //tworzenie 21 różnych wersji wielkości dopasowywanego obrazu
+        double yCenter = p2.y/m2Scale*scale;                                                                //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
+        for (double angle = -4; angle<=4; angle += 1.0)
         {
-            Mat sm = new Mat();     //nowy obiekt który przechowa przeskalowaną macierz na podstawie której będą tworzone jej wersje z dołożoną rotacją
-            Imgproc.resize(m2, sm, new Size(m2.width()*scale, m2.height()*scale), 0,0, INTER_NEAREST);      //tworzenie 21 różnych wersji wielkości dopasowywanego obrazu
-            double yCenter = p2.y/m2Scale*scale;                                                                //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
-            for (double angle = -4; angle<=4; angle += 1.0)
-            {
-                CustomMat am = new CustomMat();
-                Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_NEAREST);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
-                am.angle = angle;
-                am.scale = scale;
-                customMats.add(am);
-                //System.out.println("customMats: "+cm++);
-                //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
-            }
+            CustomMat am = new CustomMat();
+            Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_NEAREST);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
+            am.angle = angle;
+            am.scale = scale;
+            customMats.add(am);
+            //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
         }
     }
 
     private static CustomMat findBestCustomMat()
     {
-        int m1CenterX = (int)(p1.x/m2Scale);
-        int m1CenterY = (int)(p1.y/m2Scale);
-        int m2CenterY;
-        int m1StartX = m1CenterX, m1StartY, m2StartY;
-        int commonRows, commonColumns;
-        CustomMat bestCustomMat = new CustomMat();
-        bestCustomMat.avgPixelDifference = Double.MAX_VALUE;
-        int counter=1;
-        for (CustomMat m: customMats)
+        m1CenterX = (int)(p1.x/m2Scale);
+        m1CenterY = (int)(p1.y/m2Scale);
+        customMats.parallelStream().forEach(m ->
         {
+            int m2CenterY;
+            int m1StartY, m2StartY;
+            int commonRows, commonColumns;
             m2CenterY = (int)(p2.y/m2Scale*m.scale);
             commonColumns = m.width() < m1.width()-m1CenterX ? m.width() : m1.width()-m1CenterX;
             commonRows = m.height()-m2CenterY < m1.height()-m1CenterY ? m.height()-m2CenterY : m1.height()-m1CenterY;
@@ -126,7 +128,7 @@ public class Stitcher
                 int lineComparedPixels = 0;
                 for (int x = 0; x < commonColumns && lineComparedPixels<10; x++)
                 {
-                    double pixelDifference = comparePixels(m1.get(m1StartY+y, m1StartX+x ), m.get(m2StartY+y, x));
+                    double pixelDifference = comparePixels(m1.get(m1StartY+y, m1CenterX +x ), m.get(m2StartY+y, x));
                     if (pixelDifference != -1)
                     {
                         m.avgPixelDifference += pixelDifference;
@@ -136,12 +138,12 @@ public class Stitcher
                 allComparedPixels+=lineComparedPixels;
             }
             m.avgPixelDifference /= allComparedPixels;
+        });
+        CustomMat bestCustomMat = new CustomMat();
+        bestCustomMat.avgPixelDifference = Double.MAX_VALUE;
+        for (CustomMat m : customMats)
             if (m.avgPixelDifference < bestCustomMat.avgPixelDifference)
                 bestCustomMat = m;
-            //System.out.println("CustomMat: "+counter++ +" Scale: "+m.scale+" Angle: "+m.angle+" avgPixelDifference: "+m.avgPixelDifference);
-            //Imgproc.rectangle(m, new Point(0, m2CenterY-2), new Point(2, m2CenterY+2), new Scalar(0,255,0));
-            //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\Scale "+m.scale+" angle"+m.angle+"y "+m2CenterY+".jpg", m);
-        }
         System.out.println("Lowest custom mat avg pixel difference: "+bestCustomMat.avgPixelDifference+" Scale: "+bestCustomMat.scale+" Angle: "+bestCustomMat.angle);
         return bestCustomMat;
     }
@@ -206,8 +208,7 @@ public class Stitcher
                 }
         );
         canvas.setOnScroll(Stitcher::handle);
-        ScrollPane scrollPane = new ScrollPane(canvas);
-        scrollPane.setMaxWidth(m1.width()+m2.width()+15);
+        scrollPane = new ScrollPane(canvas);
         gc = canvas.getGraphicsContext2D();
         draw();
         VBox layout = new VBox(10);

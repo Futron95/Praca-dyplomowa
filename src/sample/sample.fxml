@@ -31,6 +31,7 @@
                   <items>
                     <MenuItem mnemonicParsing="false" onAction="#FileChooseAction" text="Otwórz" />
                      <MenuItem fx:id="save" disable="true" mnemonicParsing="false" onAction="#saveImage" text="Zapisz" />
+                        <MenuItem fx:id="saveAs" disable="true" mnemonicParsing="false" onAction="#saveImageAs" text="Zapisz jako" />
                      <MenuItem fx:id="closeMenuItem" disable="true" mnemonicParsing="false" onAction="#closeImage" text="Zamknij" />
                   </items>
                 </Menu>
@@ -121,7 +122,7 @@
       </VBox>
    </top>
    <center>
-      <ScrollPane prefViewportHeight="370.0" prefViewportWidth="698.0">
+      <ScrollPane fx:id="scrollPane" prefViewportHeight="370.0" prefViewportWidth="698.0">
          <content>
             <Canvas fx:id="canvas" disable="true" height="658.0" width="1277.0">
                <cursor>

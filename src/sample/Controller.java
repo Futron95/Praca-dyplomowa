@@ -6,15 +6,21 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import static org.opencv.imgproc.Imgproc.*;
 
@@ -23,11 +29,13 @@ public class Controller {
     private Canvas canvas;
     private GraphicsContext gc;
     private Mat m;
-    private float scale;
+    private float scale;            //skala używana do pokazywania edytowanego obrazu w podglądzie
     private Mat[] mats;             //tablica macierzy pixeli obrazu, umożliwia cofanie zmian
     private int currentM, backMs, forwardMs;
     private MatOfByte byteMat;
-    private String filePath;
+    private File imageFile;
+    public Boolean unsavedChanges;
+    public static Controller currentController;
     @FXML
     private ImageView brightnessUp;
     @FXML
@@ -42,6 +50,8 @@ public class Controller {
     private ImageView saturationDown;
     @FXML
     private MenuItem save;
+    @FXML
+    private MenuItem saveAs;
     @FXML
     private MenuItem encode;
     @FXML
@@ -66,11 +76,19 @@ public class Controller {
     private MenuItem redoMenuItem;
     @FXML
     private MenuItem closeMenuItem;
+    @FXML
+    private ScrollPane scrollPane;
 
     private Encoder encoder;
 
     static{
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
+
+    public Controller()
+    {
+        Controller.currentController = this;
+        unsavedChanges = false;
     }
 
     private void setScrollZooming()
@@ -92,16 +110,18 @@ public class Controller {
         FileChooser fc = new FileChooser();
         FileChooser.ExtensionFilter fileExtensions =
                 new FileChooser.ExtensionFilter(
-                        "Obrazy", "*.bmp", "*.jpg", "*.png");
+                        "Obraz", "*.bmp", "*.jpg", "*.png");
         fc.getExtensionFilters().add(fileExtensions);
-        File selectedFile = fc.showOpenDialog(null);
-        if(selectedFile != null){
+        File openedFile = fc.showOpenDialog(null);
+        if(openedFile != null){
+            unsavedChanges = false;
+            imageFile = openedFile;
             canvas.setDisable(false);
             canvas.setVisible(true);
+            scrollPane.setVisible(true);
             if (canvas.getOnScroll() == null)
                 setScrollZooming();
-            filePath = selectedFile.getPath();
-            System.out.println("Sciezka: "+filePath);
+            System.out.println("Sciezka: "+imageFile.getAbsolutePath());
             resetMats();
             byteMat = new MatOfByte();
             scale = 1;
@@ -115,6 +135,7 @@ public class Controller {
         }
     }
 
+    //przywraca macierze z obrazem i jego wczesniejszymi wersjami do domyślnych wartości
     private void resetMats()
     {
         currentM = 0;
@@ -126,9 +147,26 @@ public class Controller {
         redoImageView.setDisable(true);
         redoMenuItem.setDisable(true);
         redoImageView.setImage(new Image(".\\icons\\redo3.png"));
-        m = Imgcodecs.imread(filePath);
+        m = fileToMat(imageFile);
         mats = new Mat[11];
         mats[currentM] = m.clone();
+    }
+
+    private Mat fileToMat(File input)
+    {
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        BufferedImage imageCopy = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        imageCopy.getGraphics().drawImage(image, 0, 0, null);
+
+        byte[] data = ((DataBufferByte) imageCopy.getRaster().getDataBuffer()).getData();
+        Mat img = new Mat(image.getHeight(),image.getWidth(), CvType.CV_8UC3);
+        img.put(0, 0, data);
+        return img;
     }
 
     private Mat getScaleMat()
@@ -153,6 +191,7 @@ public class Controller {
         Imgcodecs.imencode(".bmp", getScaleMat(), byteMat);
         gc.drawImage(new Image(new ByteArrayInputStream(byteMat.toArray())),0,0);
         if (change==true) {
+            unsavedChanges = true;
             if (forwardMs>0) {
                 forwardMs = 0;
                 redoImageView.setDisable(true);
@@ -274,9 +313,46 @@ public class Controller {
         drawImage(true);
     }
 
-    public void saveImage()
+    public void saveFile(File file) {
+        String extension = file.getPath().substring(file.getPath().lastIndexOf('.'));
+        System.out.println("extension "+extension);
+        Imgcodecs.imencode(extension, m, byteMat);
+        try {
+            Files.write(file.toPath(), byteMat.toArray());
+            unsavedChanges = false;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveImage() {
+        saveFile(imageFile);
+    }
+
+
+    public void saveImageAs()
     {
-        Imgcodecs.imwrite(filePath,m);
+        FileChooser fileChooser = new FileChooser();
+        FileChooser.ExtensionFilter eFjpg = new FileChooser.ExtensionFilter("JPEG", "*.jpg", "*.jpeg");
+        FileChooser.ExtensionFilter eFpng = new FileChooser.ExtensionFilter("PNG", "*.png");
+        FileChooser.ExtensionFilter eFbmp = new FileChooser.ExtensionFilter("BMP", "*.bmp");
+        fileChooser.getExtensionFilters().addAll(eFbmp, eFjpg, eFpng);
+        String fileName = imageFile.toPath().getFileName().toString();
+        fileChooser.setInitialFileName(fileName);
+        String extension = fileName.substring(fileName.lastIndexOf('.'));
+        switch (extension)
+        {
+            case ".jpg" :
+            case ".jpeg":fileChooser.setSelectedExtensionFilter(eFjpg); break;
+            case ".bmp" :fileChooser.setSelectedExtensionFilter(eFbmp); break;
+            case ".png" :fileChooser.setSelectedExtensionFilter(eFpng); break;
+        }
+        fileChooser.setInitialDirectory(imageFile.getParentFile());
+        File file = fileChooser.showSaveDialog(scrollPane.getScene().getWindow());
+        if (file == null)
+            return;
+        System.out.println("Sciezka zapisu: "+file.getAbsolutePath());
+        saveFile(file);
     }
 
     public void encodeImg()
@@ -353,8 +429,10 @@ public class Controller {
         disableButtons();
         canvas.setDisable(true);
         canvas.setVisible(false);
+        scrollPane.setVisible(false);
         scale = 1;
         zoomLabel.setText((int)(scale*100)+"%");
+        unsavedChanges = false;
     }
 
     private void enableButtons()
@@ -378,10 +456,12 @@ public class Controller {
         rotate.setDisable(false);
         rotate.setImage(new Image(".\\icons\\rotate.png"));
         save.setDisable(false);
+        saveAs.setDisable(false);
         zoomLabel.setVisible(true);
         undoMenuItem.setDisable(false);
         redoMenuItem.setDisable(false);
         closeMenuItem.setDisable(false);
+        String filePath = imageFile.getAbsolutePath();
         if (!filePath.substring(filePath.length()-3).equals("jpg"))     //szyfrowanie i deszyfrowanie umożliwione jest tylko gdy rozszerzenie inne niz jpg poniewaz kompresja uniemożliwia poprawne odkodowanie
         {
             encode.setDisable(false);
@@ -411,9 +491,14 @@ public class Controller {
         rotate.setDisable(true);
         rotate.setImage(new Image(".\\icons\\rotate3.png"));
         save.setDisable(true);
+        saveAs.setDisable(true);
         zoomLabel.setVisible(true);
         undoMenuItem.setDisable(true);
         redoMenuItem.setDisable(true);
+        redoImageView.setDisable(true);
+        undoImageView.setImage(new Image(".\\icons\\redo3.png"));
+        undoImageView.setDisable(true);
+        undoImageView.setImage(new Image(".\\icons\\undo3.png"));
         closeMenuItem.setDisable(true);
         encode.setDisable(true);
         decode.setDisable(true);

@@ -28,6 +28,7 @@ public class Rotater {
     Button okButton;
     CheckBox noCropCheckBox;
     Stage window;
+    Pane pane;
     public boolean rotated;
 
     public Rotater (Mat m)
@@ -38,7 +39,7 @@ public class Rotater {
         window.initModality(Modality.APPLICATION_MODAL);
         window.setTitle("Obróć obraz o wybrany kąt");
         window.setWidth(800);
-        window.setHeight(700);
+        window.setHeight(800);
         double scale;
         if (m.width()>m.height())
             scale = (double)(m.width())/500;
@@ -69,7 +70,7 @@ public class Rotater {
         layout.setPadding(new Insets(10,10,10,10));
         HBox sliderBox = new HBox(10);
         sliderBox.setAlignment(Pos.TOP_CENTER);
-        Pane pane = new Pane(canvas);
+        pane = new Pane(canvas);
         gc = canvas.getGraphicsContext2D();
         sliderBox.getChildren().addAll(rotationLabel, slider);
         layout.getChildren().addAll(sliderBox, noCropCheckBox, okButton, pane);
@@ -81,6 +82,7 @@ public class Rotater {
     private void draw(Mat m)
     {
         canvas.setWidth(m.width());
+        pane.setMaxWidth(canvas.getWidth());
         canvas.setHeight(m.height());
         Imgcodecs.imencode(".bmp", m, matOfByte);
         gc.drawImage(new Image(new ByteArrayInputStream(matOfByte.toArray())),0,0);
@@ -95,7 +97,7 @@ public class Rotater {
             Size cropSize = Stitcher.getBoundingBoxSize(m, slider.getValue());
             double diagonal = Math.sqrt(m.width()*m.width()+m.height()*m.height());
             Size fitAllSize = new Size(diagonal,diagonal);
-            Mat tempMat = new Mat(fitAllSize, m.type());
+            Mat tempMat = new Mat(fitAllSize, m.type(), new Scalar(0));
             Point translateCoordinates = new Point((tempMat.width()-m.width())/2, (tempMat.height()-m.height())/2);
             Rect roi = new Rect(translateCoordinates, m.size());
             System.out.println("Kopiuje Mat m o rozmiarach: width="+m.width()+" height="+m.height()+" do tempMat o rozmiarach: width="+tempMat.width()+" height="+tempMat.height()+"\nuzywajac roi: x="+roi.x+" y="+roi.y+" width="+roi.width+" height"+roi.height);
