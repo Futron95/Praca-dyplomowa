@@ -34,6 +34,7 @@ public class Controller {
     private int currentM, backMs, forwardMs;
     private MatOfByte byteMat;
     private File imageFile;
+    private Image previewImage;
     public Boolean unsavedChanges;
     public static Controller currentController;
     @FXML
@@ -125,6 +126,7 @@ public class Controller {
             resetMats();
             byteMat = new MatOfByte();
             scale = 1;
+            zoomLabel.setText((int)(scale*100)+"%");
             canvas.setHeight(m.height());
             canvas.setWidth(m.width());
             gc = canvas.getGraphicsContext2D();
@@ -169,27 +171,20 @@ public class Controller {
         return img;
     }
 
-    private Mat getScaleMat()
+    private void redrawScaledImage()
     {
-        if (scale==1) {
-            canvas.setHeight(m.height());
-            canvas.setWidth(m.width());
-            return m;
-        }
-        int width = (int) (scale*m.width());
-        int height = (int) (scale*m.height());
-        Mat sm = new Mat();
-        Size scaledSize = new Size(width,height);
-        Imgproc.resize(m, sm, scaledSize, 0,0,INTER_NEAREST);
-        canvas.setHeight(sm.height());
-        canvas.setWidth(sm.width());
-        return sm;
+        canvas.setHeight(m.height()*scale);
+        canvas.setWidth(m.width()*scale);
+        gc.drawImage(previewImage,0,0, canvas.getWidth(), canvas.getHeight());
     }
 
     private void drawImage(boolean change)
     {
-        Imgcodecs.imencode(".bmp", getScaleMat(), byteMat);
-        gc.drawImage(new Image(new ByteArrayInputStream(byteMat.toArray())),0,0);
+        canvas.setHeight(m.height()*scale);
+        canvas.setWidth(m.width()*scale);
+        Imgcodecs.imencode(".bmp", m, byteMat);
+        previewImage = new Image(new ByteArrayInputStream(byteMat.toArray()));
+        gc.drawImage(previewImage,0,0, canvas.getWidth(), canvas.getHeight());
         if (change==true) {
             unsavedChanges = true;
             if (forwardMs>0) {
@@ -315,7 +310,6 @@ public class Controller {
 
     public void saveFile(File file) {
         String extension = file.getPath().substring(file.getPath().lastIndexOf('.'));
-        System.out.println("extension "+extension);
         Imgcodecs.imencode(extension, m, byteMat);
         try {
             Files.write(file.toPath(), byteMat.toArray());
@@ -351,14 +345,29 @@ public class Controller {
         File file = fileChooser.showSaveDialog(scrollPane.getScene().getWindow());
         if (file == null)
             return;
+        imageFile = file;
         System.out.println("Sciezka zapisu: "+file.getAbsolutePath());
-        saveFile(file);
+        saveFile(imageFile);
+    }
+
+    private String getImageExtension()
+    {
+        String path = imageFile.getPath();
+        return path.substring((path.lastIndexOf('.')+1));
     }
 
     public void encodeImg()
     {
         encoder = new Encoder();
         encoder.encode(m);
+        String imgExtension = getImageExtension();
+        if (imgExtension.equals("jpg") || imgExtension.equals("jpeg"))
+        {
+            String path = imageFile.getAbsolutePath();
+            path = path.substring(0,path.length()-imgExtension.length())+"png";
+            imageFile = new File(path);
+            saveFile(imageFile);
+        }
         drawImage(true);
         CodeOutputWindow.display(encoder.codeString);
     }
@@ -377,11 +386,11 @@ public class Controller {
 
     public void scaleUp()
     {
-        if (scale < 16) {
+        if (scale < 16 && canvas.getWidth()<5000 && canvas.getHeight()<5000) {
             scale *= 2;
             zoomLabel.setText((int)(scale*100)+"%");
         }
-        drawImage(false);
+        redrawScaledImage();
     }
 
     public void scaleDown()
@@ -390,7 +399,7 @@ public class Controller {
             scale *= 0.5;
             zoomLabel.setText((int)(scale*100)+"%");
         }
-        drawImage(false);
+        redrawScaledImage();
     }
 
     public void rotateImg()
@@ -461,12 +470,8 @@ public class Controller {
         undoMenuItem.setDisable(false);
         redoMenuItem.setDisable(false);
         closeMenuItem.setDisable(false);
-        String filePath = imageFile.getAbsolutePath();
-        if (!filePath.substring(filePath.length()-3).equals("jpg"))     //szyfrowanie i deszyfrowanie umożliwione jest tylko gdy rozszerzenie inne niz jpg poniewaz kompresja uniemożliwia poprawne odkodowanie
-        {
-            encode.setDisable(false);
-            decode.setDisable(false);
-        }
+        encode.setDisable(false);
+        decode.setDisable(false);
         stitchingMenuItem.setDisable(false);
     }
 
@@ -496,7 +501,7 @@ public class Controller {
         undoMenuItem.setDisable(true);
         redoMenuItem.setDisable(true);
         redoImageView.setDisable(true);
-        undoImageView.setImage(new Image(".\\icons\\redo3.png"));
+        redoImageView.setImage(new Image(".\\icons\\redo3.png"));
         undoImageView.setDisable(true);
         undoImageView.setImage(new Image(".\\icons\\undo3.png"));
         closeMenuItem.setDisable(true);

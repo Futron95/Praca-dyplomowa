@@ -18,6 +18,8 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayInputStream;
 
+import static org.opencv.imgproc.Imgproc.*;
+
 public class Rotater {
     Mat om, sm; //om - oryginalny obraz, sm - przeskalowany obraz
     GraphicsContext gc;
@@ -29,6 +31,7 @@ public class Rotater {
     CheckBox noCropCheckBox;
     Stage window;
     Pane pane;
+    ComboBox<String> combobox;
     public boolean rotated;
 
     public Rotater (Mat m)
@@ -58,6 +61,11 @@ public class Rotater {
         slider.setPrefWidth(360);
         slider.setOnMouseReleased(event -> draw(getRotatedMat(sm.clone())));
         slider.setOnMouseDragged( event -> rotationLabel.setText((int)slider.getValue()+" stopni"));
+        combobox = new ComboBox<>();
+        combobox.getItems().addAll("Linear", "Nearest neighbor", "Area", "Cubic", "Lanczos4");
+        combobox.setValue("Linear");
+        combobox.setPromptText("Rodzaj interpolacji");
+        combobox.setOnAction( event -> draw(getRotatedMat(sm.clone())));
         okButton = new Button("Ok");
         okButton.setOnAction(event -> {
             if (slider.getValue()!=0) {
@@ -69,11 +77,14 @@ public class Rotater {
         VBox layout = new VBox(10);
         layout.setPadding(new Insets(10,10,10,10));
         HBox sliderBox = new HBox(10);
+        HBox optionsBox = new HBox(10);
         sliderBox.setAlignment(Pos.TOP_CENTER);
+        optionsBox.setAlignment(Pos.TOP_CENTER);
         pane = new Pane(canvas);
         gc = canvas.getGraphicsContext2D();
         sliderBox.getChildren().addAll(rotationLabel, slider);
-        layout.getChildren().addAll(sliderBox, noCropCheckBox, okButton, pane);
+        optionsBox.getChildren().addAll(noCropCheckBox, combobox);
+        layout.getChildren().addAll(sliderBox, optionsBox, okButton, pane);
         layout.setAlignment(Pos.TOP_CENTER);
         Scene scene = new Scene(layout);
         window.setScene(scene);
@@ -90,10 +101,19 @@ public class Rotater {
 
     private Mat getRotatedMat(Mat m)
     {
+        if (slider.getValue()==0)
+            return m;
+        int interpolationFlag = 0;
+        switch (combobox.getValue())
+        {
+            case "Nearest neighbor": interpolationFlag = INTER_NEAREST; break;
+            case "Linear": interpolationFlag = INTER_LINEAR; break;
+            case "Area": interpolationFlag = INTER_AREA; break;
+            case "Cubic": interpolationFlag = INTER_CUBIC; break;
+            case "Lanczos4": interpolationFlag = INTER_LANCZOS4; break;
+        }
         if (noCropCheckBox.isSelected())
         {
-            if (slider.getValue()==0)
-                return m;
             Size cropSize = Stitcher.getBoundingBoxSize(m, slider.getValue());
             double diagonal = Math.sqrt(m.width()*m.width()+m.height()*m.height());
             Size fitAllSize = new Size(diagonal,diagonal);
@@ -103,7 +123,7 @@ public class Rotater {
             System.out.println("Kopiuje Mat m o rozmiarach: width="+m.width()+" height="+m.height()+" do tempMat o rozmiarach: width="+tempMat.width()+" height="+tempMat.height()+"\nuzywajac roi: x="+roi.x+" y="+roi.y+" width="+roi.width+" height"+roi.height);
             m.copyTo(new Mat(tempMat, roi));
             Point center = new Point(tempMat.width()/2, tempMat.height()/2);
-            Imgproc.warpAffine(tempMat, tempMat, Imgproc.getRotationMatrix2D(center, slider.getValue(), 1.0), tempMat.size());
+            Imgproc.warpAffine(tempMat, tempMat, Imgproc.getRotationMatrix2D(center, slider.getValue(), 1.0), tempMat.size(),interpolationFlag);
             int cropRowStart = (int)((tempMat.height()-cropSize.height)/2);
             int cropRowEnd = cropRowStart+(int)cropSize.height;
             int cropColumnStart = (int)((tempMat.width()-cropSize.width)/2);
@@ -114,7 +134,7 @@ public class Rotater {
         else
         {
             Point center = new Point(m.width()/2, m.height()/2);
-            Imgproc.warpAffine(m, m, Imgproc.getRotationMatrix2D(center, slider.getValue(), 1.0), m.size());
+            Imgproc.warpAffine(m, m, Imgproc.getRotationMatrix2D(center, slider.getValue(), 1.0), m.size(),interpolationFlag);
             return m;
         }
     }
