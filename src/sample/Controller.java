@@ -10,7 +10,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -20,7 +19,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 import static org.opencv.imgproc.Imgproc.*;
 
@@ -58,7 +56,9 @@ public class Controller {
     @FXML
     private MenuItem decode;
     @FXML
-    private MenuItem stitchingMenuItem;
+    private MenuItem autoStitchingMenuItem;
+    @FXML
+    private MenuItem manualStitchingMenuItem;
     @FXML
     private ImageView undoImageView;
     @FXML
@@ -411,7 +411,17 @@ public class Controller {
        }
     }
 
-    public void stitchImg()
+    public void autoStitching()
+    {
+        stitchImg(true);
+    }
+
+    public void manualStitching()
+    {
+        stitchImg(false);
+    }
+
+    private void stitchImg(boolean automaticStitching)
     {
         Mat m2;
         FileChooser fc = new FileChooser();
@@ -422,7 +432,7 @@ public class Controller {
         File selectedFile = fc.showOpenDialog(null);
         if(selectedFile != null){
             m2 = Imgcodecs.imread(selectedFile.getAbsolutePath());
-            Mat newM = Stitcher.stitch(m,m2);
+            Mat newM = Stitcher.stitch(m,m2, automaticStitching);
             if (newM!=m) {
                 m=newM;
                 canvas.setWidth(m.width());
@@ -472,7 +482,8 @@ public class Controller {
         closeMenuItem.setDisable(false);
         encode.setDisable(false);
         decode.setDisable(false);
-        stitchingMenuItem.setDisable(false);
+        autoStitchingMenuItem.setDisable(false);
+        manualStitchingMenuItem.setDisable(false);
     }
 
     private void disableButtons()
@@ -507,7 +518,8 @@ public class Controller {
         closeMenuItem.setDisable(true);
         encode.setDisable(true);
         decode.setDisable(true);
-        stitchingMenuItem.setDisable(true);
+        autoStitchingMenuItem.setDisable(true);
+        autoStitchingMenuItem.setDisable(true);
     }
 
     public void brightnessDownPressed()

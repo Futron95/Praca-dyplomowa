@@ -1,5 +1,6 @@
 package sample;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -19,7 +20,6 @@ import org.opencv.imgproc.Imgproc;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.opencv.core.Core.flip;
 import static org.opencv.imgproc.Imgproc.INTER_NEAREST;
@@ -27,7 +27,7 @@ import static org.opencv.imgproc.Imgproc.getRotationMatrix2D;
 
 public class Stitcher
 {
-    private static Point p1, p2;
+    private static Point p1, p2;    //punkty kontrolne wskazujące odpowiadające sobie miejsca na dwóch obrazach, umożliwiając poprawne dopasowanie obrazów do siebie
     private static Mat om1, om2, m1, m2, m3, preparedMat, finalMat;
     private static GraphicsContext gc;
     private static MatOfByte matOfByte;
@@ -36,8 +36,11 @@ public class Stitcher
     private static double scale, m2Scale = 1.0;
     private static Canvas canvas;
     private static ScrollPane scrollPane;
-    private static boolean flipped;
+    private static boolean flipped, automaticStitching;
     private static int m1CenterX, m1CenterY;
+    private static Stage window;
+    private static ProgressScene progressScene;
+    private static Runnable updater;
 
     private static void draw()
     {
@@ -86,7 +89,8 @@ public class Stitcher
     {
         Mat sm = new Mat();     //nowy obiekt który przechowa przeskalowaną macierz na podstawie której będą tworzone jej wersje z dołożoną rotacją
         Imgproc.resize(m2, sm, new Size(m2.width()*scale, m2.height()*scale), 0,0, INTER_NEAREST);      //tworzenie 21 różnych wersji wielkości dopasowywanego obrazu
-        double yCenter = p2.y/m2Scale*scale;                                                                //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
+        double yCenter = p2.y/m2Scale*scale;                                                              //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
+        Platform.runLater(() -> progressScene.processLabel.setText("Tworzenie obrazów do dopasowania"));
         for (double angle = -4; angle<=4; angle += 1.0)
         {
             CustomMat am = new CustomMat();
@@ -94,6 +98,8 @@ public class Stitcher
             am.angle = angle;
             am.scale = scale;
             customMats.add(am);
+            progressScene.progressPoints++;
+            Platform.runLater(updater);
             //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\custom mats\\scale "+scale+" angle "+angle+".png", am);
         }
     }
@@ -102,6 +108,7 @@ public class Stitcher
     {
         m1CenterX = (int)(p1.x/m2Scale);
         m1CenterY = (int)(p1.y/m2Scale);
+        Platform.runLater(() -> progressScene.processLabel.setText("Określanie najlepszego dopasowania"));
         customMats.parallelStream().forEach(m ->
         {
             int m2CenterY;
@@ -128,7 +135,7 @@ public class Stitcher
                 int lineComparedPixels = 0;
                 for (int x = 0; x < commonColumns && lineComparedPixels<10; x++)
                 {
-                    double pixelDifference = comparePixels(m1.get(m1StartY+y, m1CenterX +x ), m.get(m2StartY+y, x));
+                    double pixelDifference = comparePixelsIfNotBlack(m1.get(m1StartY+y, m1CenterX +x ), m.get(m2StartY+y, x));
                     if (pixelDifference != -1)
                     {
                         m.avgPixelDifference += pixelDifference;
@@ -138,6 +145,8 @@ public class Stitcher
                 allComparedPixels+=lineComparedPixels;
             }
             m.avgPixelDifference /= allComparedPixels;
+            progressScene.progressPoints++;
+            Platform.runLater(updater);
         });
         CustomMat bestCustomMat = new CustomMat();
         bestCustomMat.avgPixelDifference = Double.MAX_VALUE;
@@ -148,24 +157,96 @@ public class Stitcher
         return bestCustomMat;
     }
 
-
     private static double comparePixels(double[] rgb1, double[] rgb2)
     {
-        if (rgb2[0]+rgb2[1]+rgb2[2]==0)
-            return -1;
-        double difference = 0.0;
-        difference += Math.abs(rgb1[0]-rgb2[0]);
+        double difference =  Math.abs(rgb1[0]-rgb2[0]);
         difference += Math.abs(rgb1[1]-rgb2[1]);
         difference += Math.abs(rgb1[2]-rgb2[2]);
         return difference;
     }
 
-    public static Mat stitch (Mat mat1, Mat mat2)
+    private static double comparePixelsIfNotBlack(double[] rgb1, double[] rgb2)
     {
-        // m1 i m2 to mniejsze wersje obrazów tworzone w celu przyspieszenia sprawdzania poprawnosci zszywania,
-        m1 = mat1.clone();
-        m2 = mat2.clone();
-        finalMat = mat1;
+        if (rgb2[0]+rgb2[1]+rgb2[2]==0)
+            return -1;
+        return comparePixels(rgb1, rgb2);
+    }
+
+    private static double getMatsDifference(Mat ma, Mat mb, int x1, int y1, int x2, int y2)
+    {
+        double difference = 0;
+        double[] rgb1, rgb2;
+        int pixelsCount = 0;
+        for (int x = -20; x<20; x++)
+        {
+            for (int y = -20; y<20; y++)
+            {
+                rgb1 = ma.get(y1+y, x1+x);
+                if (rgb1==null)
+                    continue;
+                rgb2 =  mb.get(y2+y, x2+x);
+                if (rgb2==null)
+                    continue;
+                difference += comparePixels(rgb1,rgb2);
+                pixelsCount++;
+            }
+        }
+        return difference/pixelsCount;
+    }
+
+    private static void setControlPoints()
+    {
+        Platform.runLater(() -> progressScene.processLabel.setText("Ustalanie punktów kontrolnych"));
+        Mat ma = m1.clone();
+        Mat mb = m2.clone();
+        int commonFieldX, commonFieldY, commOnFieldWidth, commonFieldHeight, commonFieldCenterX, commonFieldCenterY, bestCenterX=0, bestCenterY=0;
+        double difference, bestDifference = Double.MAX_VALUE;
+        double bestStartX=0, bestStartY=0;
+        Imgproc.resize(ma, ma, new Size(200,200));
+        Imgproc.resize(mb, mb, new Size(200,200));
+        for (int x = -150; x<150; x++)
+        {
+            if (x == -5)
+                x = 5;
+            for (int y = -30; y<30; y++)
+            {
+                commonFieldX = 0>x ? 0 : x;
+                commonFieldY = 0>y ? 0 : y;
+                commOnFieldWidth = 200 - Math.abs(x);
+                commonFieldHeight = 200 - Math.abs(y);
+                commonFieldCenterX = commonFieldX + commOnFieldWidth/2;
+                commonFieldCenterY = commonFieldY + commonFieldHeight/2;
+                difference = getMatsDifference(ma, mb, commonFieldCenterX, commonFieldCenterY, 200-commonFieldCenterX, 200-commonFieldCenterY);
+                if (difference<bestDifference)
+                {
+                    bestDifference = difference;
+                    bestCenterX = commonFieldCenterX;
+                    bestCenterY = commonFieldCenterY;
+                    bestStartX = commonFieldX;
+                    bestStartY = commonFieldY;
+                }
+
+            }
+            progressScene.progressPoints++;
+            Platform.runLater(updater);
+        }
+        System.out.println("x1 "+ bestStartX+ " y1 "+ bestStartY);
+        p1 = new Point(m1.width()*bestCenterX/200, m1.height()*bestCenterY/200);
+        p2 = new Point(m2.width()*(201-bestCenterX)/200, m2.height()*(201-bestCenterY)/200);
+        System.out.println("p1x = "+p1.x+" p1y = "+p1.y+" p2x = "+p2.x+" p2y = "+p2.y);
+    }
+
+
+
+    private static void createWindow()
+    {
+        window = new Stage();
+        window.initModality(Modality.APPLICATION_MODAL);
+        window.setTitle("Zszywanie dwóch obrazów");
+    }
+
+    private static void manualStitching()
+    {
         m3 = new Mat();
         Core.hconcat(Arrays.asList(m1,m2),m3);
         double m3width = m3.width();
@@ -174,24 +255,13 @@ public class Stitcher
         {
             scale *= 0.5;
         }
-        Stage window = new Stage();
-        window.initModality(Modality.APPLICATION_MODAL);
-        window.setTitle("Zszywanie dwóch obrazów");
         window.setMinWidth(512);
         window.setMaxWidth(1920);
         window.setMaxHeight(1080);
         Label label = new Label("Zaznacz punkt wspólny obu obrazów.");
         Button confirmationButton = new Button("ok");
         confirmationButton.setDisable(true);
-        confirmationButton.setOnAction(event -> {
-            confirmationButton.setDisable(true);
-            canvas.setDisable(true);
-            createCustomMats();
-            CustomMat bcm = findBestCustomMat();
-            createPreparedMat(bcm);
-            createFinalMat();
-            window.close();
-        });
+        confirmationButton.setOnAction(event -> stitchingAlgorithm());
         matOfByte = new MatOfByte();
         canvas = new Canvas(m1.width()+m2.width(), m1.height());
         canvas.setOnMouseClicked( e ->
@@ -217,6 +287,47 @@ public class Stitcher
         Scene scene = new Scene(layout);
         window.setScene(scene);
         window.showAndWait();
+    }
+
+    private static void stitchingAlgorithm()
+    {
+        progressScene = new ProgressScene();
+        window.setScene(progressScene.scene);
+        window.setWidth(400);
+        window.setHeight(200);
+        window.setResizable(false);
+        Thread thread = new Thread(() ->
+        {
+            updater = () -> progressScene.updateProgressBar();
+            if (automaticStitching == true) {
+                progressScene.progressPointsLimit = 1170;
+                setControlPoints();
+            }
+            else
+                progressScene.progressPointsLimit = 880;
+            createCustomMats();
+            CustomMat bcm = findBestCustomMat();
+            createPreparedMat(bcm);
+            createFinalMat();
+            Platform.runLater(() -> window.close());
+        });
+        thread.start();
+        if (!window.isShowing())
+            window.showAndWait();
+    }
+
+    public static Mat stitch(Mat mat1, Mat mat2, Boolean automaticStitching)
+    {
+        // m1 i m2 to mniejsze wersje obrazów tworzone w celu przyspieszenia sprawdzania poprawnosci zszywania,
+        Stitcher.automaticStitching = automaticStitching;
+        m1 = mat1.clone();
+        m2 = mat2.clone();
+        finalMat = mat1;
+        createWindow();
+        if (automaticStitching != true)
+            manualStitching();
+        else
+            stitchingAlgorithm();
         return finalMat;
     }
 
@@ -233,12 +344,15 @@ public class Stitcher
 
     private static void createFinalMat()
     {
+        Platform.runLater(() -> progressScene.processLabel.setText("Łączenie pełnowymiarowych obrazów"));
         int xBorder = (int)p1.x-(int)p2.x;
         int yBorder = (int)p1.y-(int)p2.y;
         double[] rgb1, rgb2;
         double gradientCounter;
         finalMat = new Mat(om1.height(), xBorder+preparedMat.width(), om1.type());
-        for (int y = 0; y < finalMat.height(); y++)
+        int rows = finalMat.height();
+        double startingProgressPoint = progressScene.progressPoints;
+        for (int y = 0; y < rows; y++)
         {
             gradientCounter = 0.1;
             for (int x = 0; x < finalMat.width(); x++)
@@ -263,7 +377,7 @@ public class Stitcher
                     else
                     {
                         rgb2 = preparedMat.get(y2, x2);
-                        if (rgb2[0] + rgb2[1] + rgb2[2] == 0) {
+                        if (rgb2 == null || rgb2[0] + rgb2[1] + rgb2[2] == 0) {
                             if (rgb1 != null)
                                 finalMat.put(y, x, rgb1);
                             else
@@ -281,6 +395,8 @@ public class Stitcher
 
                 }
             }
+            progressScene.progressPoints = startingProgressPoint+(y*1.0/rows*300);
+            Platform.runLater(updater);
         }
         if (flipped)
         {
@@ -328,6 +444,7 @@ public class Stitcher
     }
 
     private static void createPreparedMat(CustomMat bcm) {
+        Platform.runLater(() -> progressScene.processLabel.setText("Przygotowywanie pełnowymiarowego obrazu do nałożenia"));
         om2 = om2.submat(Range.all(), new Range((int) (p2.x), om2.width()-1));
         Imgproc.resize(om2, om2, new Size(om2.width()*bcm.scale, om2.height()*bcm.scale));
         Size newSize = getBoundingBoxSize(om2, bcm.angle);
@@ -343,12 +460,14 @@ public class Stitcher
         p2 = getRotatedPointCoordinates(p2, -bcm.angle);
         p2.x += centerPoint.x;
         p2.y += centerPoint.y;
-        preparedMat = new Mat(newSize, om2.type());
+        preparedMat = new Mat(newSize, om2.type(), new Scalar(0));
         Rect roi = new Rect(translateCoordinates, om2.size());
         om2.copyTo(new Mat(preparedMat, roi));
         Imgproc.warpAffine(preparedMat, preparedMat, getRotationMatrix2D(centerPoint, bcm.angle, 1.0), preparedMat.size(), INTER_NEAREST);
+        progressScene.progressPoints+=22;
+        Platform.runLater(updater);
         //Imgproc.rectangle(preparedMat, new Point(p2.x-2, p2.y-2), new Point(p2.x+2, p2.y+2), new Scalar(255,0,0));
-        Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\finalMatCommonPoint.jpg", preparedMat);
+        //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\finalMatCommonPoint.jpg", preparedMat);
     }
 
     private static Mat getDisplayMat() {
