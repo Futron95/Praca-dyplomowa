@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="opencv-343">
+    <CLASSES>
+      <root url="jar://D:/rozne/sterowniki i instalatory/opencv/build/java/x64/opencv-343.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <NATIVE>
+      <root url="file://D:/rozne/sterowniki i instalatory/opencv/build/java/x64" />
+    </NATIVE>
+    <SOURCES>
+      <root url="jar://D:/rozne/sterowniki i instalatory/opencv/build/java/x64/opencv-343.jar!/" />
+    </SOURCES>
+  </library>
+</component>

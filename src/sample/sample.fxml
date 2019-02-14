@@ -39,8 +39,7 @@
                   <items>
                     <MenuItem fx:id="undoMenuItem" disable="true" mnemonicParsing="false" onAction="#undo" text="Cofnij" />
                         <MenuItem fx:id="redoMenuItem" disable="true" mnemonicParsing="false" onAction="#redo" text="Powtórz" />
-                        <MenuItem fx:id="encode" disable="true" mnemonicParsing="false" onAction="#encodeImg" text="Szyfruj" />
-                        <MenuItem fx:id="decode" disable="true" mnemonicParsing="false" onAction="#openDecodeWindow" text="Odszyfruj" />
+                        <MenuItem fx:id="encrypt" disable="true" mnemonicParsing="false" onAction="#encryptImg" text="Szyfrowanie" />
                         <MenuItem fx:id="manualStitchingMenuItem" disable="true" mnemonicParsing="false" onAction="#manualStitching" text="Dołącz obraz ręcznie" />
                         <MenuItem fx:id="autoStitchingMenuItem" disable="true" mnemonicParsing="false" onAction="#autoStitching" text="Dołącz obraz automatycznie" />
                   </items>

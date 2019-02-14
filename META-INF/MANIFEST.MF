@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: ./opencv_java343.dll
+Main-Class: sample.Main
+

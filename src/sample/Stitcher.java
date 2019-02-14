@@ -32,7 +32,7 @@ public class Stitcher
     private static GraphicsContext gc;
     private static MatOfByte matOfByte;
     private static ArrayList<CustomMat> customMats;
-    private static final int M2TARGET_WIDTH = 100;
+    private static final int M2TARGET_WIDTH = 300;
     private static double scale, m2Scale = 1.0;
     private static Canvas canvas;
     private static ScrollPane scrollPane;
@@ -41,6 +41,7 @@ public class Stitcher
     private static Stage window;
     private static ProgressScene progressScene;
     private static Runnable updater;
+    private static final int controlPointsMatsSize = 400;
 
     private static void draw()
     {
@@ -75,11 +76,11 @@ public class Stitcher
         om1 = m1.clone();
         om2 = m2.clone();
         customMats = new ArrayList<>();
-        m2 = m2.submat(Range.all (), new Range((int)(p2.x), m2.width()-(int)(m1.width()-p1.x)) );     // kadrowanie dopasowywanego obrazu od zaznaczonego punktu do szerokości fragmentu pierwszego obrazu z którym będzie porównywany
-        if (m2.width() >= 2* M2TARGET_WIDTH) {
+        m2 = m2.submat(Range.all(), new Range((int)(p2.x), m2.width()-(int)(m1.width()-p1.x)) );     // kadrowanie dopasowywanego obrazu od zaznaczonego punktu do szerokości fragmentu pierwszego obrazu z którym będzie porównywany
+        if (m2.width() > M2TARGET_WIDTH) {
             m2Scale = m2.width() / M2TARGET_WIDTH;
-            Imgproc.resize(m2, m2, new Size(M2TARGET_WIDTH, m2.height()/m2Scale));
-            Imgproc.resize(m1, m1, new Size(m1.width()/m2Scale, m1.height()/m2Scale));
+            Imgproc.resize(m2, m2, new Size(M2TARGET_WIDTH, m2.height()/m2Scale), INTER_NEAREST);
+            Imgproc.resize(m1, m1, new Size(m1.width()/m2Scale, m1.height()/m2Scale), INTER_NEAREST);
         }
         for (double scale = 0.9; scale < 1.21; scale += 0.01)
             addScaledMats(scale);
@@ -89,12 +90,12 @@ public class Stitcher
     {
         Mat sm = new Mat();     //nowy obiekt który przechowa przeskalowaną macierz na podstawie której będą tworzone jej wersje z dołożoną rotacją
         Imgproc.resize(m2, sm, new Size(m2.width()*scale, m2.height()*scale), 0,0, INTER_NEAREST);      //tworzenie 21 różnych wersji wielkości dopasowywanego obrazu
-        double yCenter = p2.y/m2Scale*scale;                                                              //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
+        double yControl = p2.y/m2Scale*scale;                                                              //określanie gdzie po przeskalowaniu znajduje się punkt zaznaczony punkt
         Platform.runLater(() -> progressScene.processLabel.setText("Tworzenie obrazów do dopasowania"));
         for (double angle = -4; angle<=4; angle += 1.0)
         {
             CustomMat am = new CustomMat();
-            Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yCenter), angle, 1.0), sm.size(), INTER_NEAREST);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
+            Imgproc.warpAffine(sm, am, Imgproc.getRotationMatrix2D(new Point(0.0, yControl), angle, 1.0), sm.size(), INTER_NEAREST);        //tworzenie różnych wersji dopasowywanego obrazu poprzez obracanie go między -4 a 4 stopnie
             am.angle = angle;
             am.scale = scale;
             customMats.add(am);
@@ -177,9 +178,9 @@ public class Stitcher
         double difference = 0;
         double[] rgb1, rgb2;
         int pixelsCount = 0;
-        for (int x = -20; x<20; x++)
+        for (int x = -10; x<10; x++)
         {
-            for (int y = -20; y<20; y++)
+            for (int y = -30; y<30; y++)
             {
                 rgb1 = ma.get(y1+y, x1+x);
                 if (rgb1==null)
@@ -199,40 +200,41 @@ public class Stitcher
         Platform.runLater(() -> progressScene.processLabel.setText("Ustalanie punktów kontrolnych"));
         Mat ma = m1.clone();
         Mat mb = m2.clone();
-        int commonFieldX, commonFieldY, commOnFieldWidth, commonFieldHeight, commonFieldCenterX, commonFieldCenterY, bestCenterX=0, bestCenterY=0;
+        int commonFieldX, commonFieldY, commOnFieldWidth, commonFieldHeight, commonFieldCenterX, commonFieldCenterY;
+        int bestCenterX=0, bestCenterY=0, bestY=0, bestX=0;
         double difference, bestDifference = Double.MAX_VALUE;
-        double bestStartX=0, bestStartY=0;
-        Imgproc.resize(ma, ma, new Size(200,200));
-        Imgproc.resize(mb, mb, new Size(200,200));
-        for (int x = -150; x<150; x++)
+        Imgproc.resize(ma, ma, new Size(controlPointsMatsSize, controlPointsMatsSize));
+        Imgproc.resize(mb, mb, new Size(controlPointsMatsSize, controlPointsMatsSize));
+        int shiftX = (int) (controlPointsMatsSize *0.75);
+        for (int x = -shiftX; x<shiftX; x++)
         {
-            if (x == -5)
-                x = 5;
-            for (int y = -30; y<30; y++)
+            if (x == -10)
+                x = 10;
+            for (int y = -shiftX/5; y<shiftX/5; y++)
             {
                 commonFieldX = 0>x ? 0 : x;
                 commonFieldY = 0>y ? 0 : y;
-                commOnFieldWidth = 200 - Math.abs(x);
-                commonFieldHeight = 200 - Math.abs(y);
+                commOnFieldWidth = controlPointsMatsSize - Math.abs(x);
+                commonFieldHeight = controlPointsMatsSize - Math.abs(y);
                 commonFieldCenterX = commonFieldX + commOnFieldWidth/2;
                 commonFieldCenterY = commonFieldY + commonFieldHeight/2;
-                difference = getMatsDifference(ma, mb, commonFieldCenterX, commonFieldCenterY, 200-commonFieldCenterX, 200-commonFieldCenterY);
+                difference = getMatsDifference(ma, mb, commonFieldCenterX, commonFieldCenterY, commonFieldCenterX-x, commonFieldCenterY-y);
                 if (difference<bestDifference)
                 {
                     bestDifference = difference;
                     bestCenterX = commonFieldCenterX;
                     bestCenterY = commonFieldCenterY;
-                    bestStartX = commonFieldX;
-                    bestStartY = commonFieldY;
+                    bestX = x;
+                    bestY = y;
+                    System.out.println("x: "+x+" y: "+y);
                 }
 
             }
             progressScene.progressPoints++;
             Platform.runLater(updater);
         }
-        System.out.println("x1 "+ bestStartX+ " y1 "+ bestStartY);
-        p1 = new Point(m1.width()*bestCenterX/200, m1.height()*bestCenterY/200);
-        p2 = new Point(m2.width()*(201-bestCenterX)/200, m2.height()*(201-bestCenterY)/200);
+        p1 = new Point(m1.width()*bestCenterX/ controlPointsMatsSize, m1.height()*bestCenterY/ controlPointsMatsSize);
+        p2 = new Point(m2.width()*(bestCenterX-bestX)/ controlPointsMatsSize, m2.height()*(bestCenterY-bestY)/ controlPointsMatsSize);
         System.out.println("p1x = "+p1.x+" p1y = "+p1.y+" p2x = "+p2.x+" p2y = "+p2.y);
     }
 
@@ -289,24 +291,31 @@ public class Stitcher
         window.showAndWait();
     }
 
-    private static void stitchingAlgorithm()
+    private static void initProgressWindow()
     {
         progressScene = new ProgressScene();
         window.setScene(progressScene.scene);
         window.setWidth(400);
         window.setHeight(200);
         window.setResizable(false);
+    }
+
+    private static void stitchingAlgorithm()
+    {
+        initProgressWindow();
         Thread thread = new Thread(() ->
         {
             updater = () -> progressScene.updateProgressBar();
+            progressScene.progressPointsLimit = 880;
             if (automaticStitching == true) {
-                progressScene.progressPointsLimit = 1170;
+                progressScene.progressPointsLimit += controlPointsMatsSize*1.5-20;
                 setControlPoints();
             }
-            else
-                progressScene.progressPointsLimit = 880;
             createCustomMats();
             CustomMat bcm = findBestCustomMat();
+            /*CustomMat bcm = new CustomMat();
+            bcm.angle = 0;
+            bcm.scale = 1;*/
             createPreparedMat(bcm);
             createFinalMat();
             Platform.runLater(() -> window.close());
@@ -319,10 +328,10 @@ public class Stitcher
     public static Mat stitch(Mat mat1, Mat mat2, Boolean automaticStitching)
     {
         // m1 i m2 to mniejsze wersje obrazów tworzone w celu przyspieszenia sprawdzania poprawnosci zszywania,
-        Stitcher.automaticStitching = automaticStitching;
         m1 = mat1.clone();
         m2 = mat2.clone();
         finalMat = mat1;
+        Stitcher.automaticStitching = automaticStitching;
         createWindow();
         if (automaticStitching != true)
             manualStitching();
@@ -345,59 +354,36 @@ public class Stitcher
     private static void createFinalMat()
     {
         Platform.runLater(() -> progressScene.processLabel.setText("Łączenie pełnowymiarowych obrazów"));
-        int xBorder = (int)p1.x-(int)p2.x;
-        int yBorder = (int)p1.y-(int)p2.y;
-        double[] rgb1, rgb2;
+        int xBorder = (int)(p1.x-p2.x);
+        int yBorder = (int)(p1.y-p2.y);
+        double[] rgb2;
         double gradientCounter;
-        finalMat = new Mat(om1.height(), xBorder+preparedMat.width(), om1.type());
+        finalMat = new Mat(om1.height(), xBorder+preparedMat.width(), om1.type(), new Scalar(0));
+        om1.copyTo(new Mat(finalMat, new Rect(0,0,om1.width(),om1.height())));
         int rows = finalMat.height();
         double startingProgressPoint = progressScene.progressPoints;
         for (int y = 0; y < rows; y++)
         {
             gradientCounter = 0.1;
-            for (int x = 0; x < finalMat.width(); x++)
+            for (int x = xBorder; x < finalMat.width(); x++)
             {
-                if (x<om1.width())
-                    rgb1 = om1.get(y, x);
-                else
-                    rgb1 = null;
-                if (x < xBorder)
-                    finalMat.put(y, x, rgb1);
-                else
-                {
-                    int x2 = x - xBorder;
-                    int y2 = y - yBorder;
-                    if (y2<0 || x2<0)
-                    {
-                        if (rgb1!=null)
-                            finalMat.put(y, x, rgb1);
-                        else
-                            finalMat.put(y, x, new double[]{0, 0, 0});
-                    }
-                    else
-                    {
-                        rgb2 = preparedMat.get(y2, x2);
-                        if (rgb2 == null || rgb2[0] + rgb2[1] + rgb2[2] == 0) {
-                            if (rgb1 != null)
-                                finalMat.put(y, x, rgb1);
-                            else
-                                finalMat.put(y, x, new double[]{0, 0, 0});
-                        }
-                        else {
-                            if (gradientCounter<1.0) {
-                                finalMat.put(y, x, getGradientPixel(rgb1, rgb2, gradientCounter));
-                                gradientCounter += 0.1;
-                            }
-                            else
-                                finalMat.put(y, x, rgb2);
-                        }
-                    }
-
-                }
+                int x2 = x - xBorder;
+                int y2 = y - yBorder;
+                if (y2 < 0 || x2 < 0)
+                  continue;
+                rgb2 = preparedMat.get(y2, x2);
+                if (rgb2 == null || rgb2[0] + rgb2[1] + rgb2[2] == 0)
+                    continue;
+                if (gradientCounter < 1.0) {
+                    finalMat.put(y, x, getGradientPixel(finalMat.get(y,x), rgb2, gradientCounter));
+                    gradientCounter += 0.1;
+                } else
+                    finalMat.put(y, x, rgb2);
             }
             progressScene.progressPoints = startingProgressPoint+(y*1.0/rows*300);
             Platform.runLater(updater);
         }
+        Imgproc.rectangle(finalMat, new Point(p1.x-2, p1.y-2), new Point(p1.x+2, p1.y+2), new Scalar(255,0,0));
         if (flipped)
         {
             Mat tempMat = new Mat();
@@ -443,7 +429,8 @@ public class Stitcher
         return new Size(width, height);
     }
 
-    private static void createPreparedMat(CustomMat bcm) {
+    private static void createPreparedMat(CustomMat bcm)
+    {
         Platform.runLater(() -> progressScene.processLabel.setText("Przygotowywanie pełnowymiarowego obrazu do nałożenia"));
         om2 = om2.submat(Range.all(), new Range((int) (p2.x), om2.width()-1));
         Imgproc.resize(om2, om2, new Size(om2.width()*bcm.scale, om2.height()*bcm.scale));
@@ -470,7 +457,8 @@ public class Stitcher
         //Imgcodecs.imwrite("D:\\rozne\\wszelakie fociaste\\testowe\\finalMatCommonPoint.jpg", preparedMat);
     }
 
-    private static Mat getDisplayMat() {
+    private static Mat getDisplayMat()
+    {
         Mat sm = new Mat();
         if (scale != 1)
             Imgproc.resize(m3, sm, new Size(m3.width()*scale, m3.height()*scale),0,0, INTER_NEAREST);

@@ -7,19 +7,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://D:/rozne/sterowniki i instalatory/opencv/build/java/opencv-343.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <NATIVE>
-          <root url="file://D:/rozne/sterowniki i instalatory/opencv/build/java/x64" />
-        </NATIVE>
-        <SOURCES>
-          <root url="jar://D:/rozne/sterowniki i instalatory/opencv/build/java/opencv-343.jar!/" />
-        </SOURCES>
-      </library>
-    </orderEntry>
+    <orderEntry type="library" name="opencv-343" level="project" />
   </component>
 </module>
