@@ -1,4 +1,4 @@
-package sample;
+package sample.Interfaces;
 
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,6 +8,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import sample.Controller;
 
 public class CloseBox
 {

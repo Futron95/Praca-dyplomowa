@@ -1,4 +1,4 @@
-package sample;
+package sample.Converters;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -103,7 +103,7 @@ public class Rotater {
     {
         if (slider.getValue()==0)
             return m;
-        int interpolationFlag = 0;
+        int interpolationFlag = 1;
         switch (combobox.getValue())
         {
             case "Nearest neighbor": interpolationFlag = INTER_NEAREST; break;

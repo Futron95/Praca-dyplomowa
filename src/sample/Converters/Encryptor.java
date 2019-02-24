@@ -1,4 +1,4 @@
-package sample;
+package sample.Converters;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

@@ -44,11 +44,6 @@
                         <MenuItem fx:id="autoStitchingMenuItem" disable="true" mnemonicParsing="false" onAction="#autoStitching" text="Dołącz obraz automatycznie" />
                   </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Pomoc">
-                  <items>
-                    <MenuItem mnemonicParsing="false" text="Informacje" />
-                  </items>
-                </Menu>
               </menus>
                <BorderPane.margin>
                   <Insets />
@@ -56,32 +51,32 @@
             </MenuBar>
             <Pane prefHeight="34.0" prefWidth="1100.0">
                <children>
-                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="109.0" layoutY="4.0" onMouseClicked="#decreaseBrightness" onMousePressed="#brightnessDownPressed" onMouseReleased="#brightnessDownReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="109.0" layoutY="4.0" onMousePressed="#brightnessDownPressed" onMouseReleased="#brightnessDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20down3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="152.0" layoutY="4.0" onMouseClicked="#increaseBrightness" onMousePressed="#brightnessUpPressed" onMouseReleased="#brightnessUpReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="152.0" layoutY="4.0" onMousePressed="#brightnessUpPressed" onMouseReleased="#brightnessUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20up3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="235.0" layoutY="4.0" onMouseClicked="#increaseContrast" onMousePressed="#contrastUpPressed" onMouseReleased="#contrastUpReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="235.0" layoutY="4.0" onMousePressed="#contrastUpPressed" onMouseReleased="#contrastUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20up3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="192.0" layoutY="4.0" onMouseClicked="#decreaseContrast" onMousePressed="#contrastDownPressed" onMouseReleased="#contrastDownReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="192.0" layoutY="4.0" onMousePressed="#contrastDownPressed" onMouseReleased="#contrastDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20down3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="282.0" layoutY="4.0" onMouseClicked="#decreaseSaturation" onMousePressed="#saturationDownPressed" onMouseReleased="#saturationDownReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="282.0" layoutY="4.0" onMousePressed="#saturationDownPressed" onMouseReleased="#saturationDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/saturation%20down3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="325.0" layoutY="4.0" onMouseClicked="#increaseSaturation" onMousePressed="#saturationUpPressed" onMouseReleased="#saturationUpReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="325.0" layoutY="4.0" onMousePressed="#saturationUpPressed" onMouseReleased="#saturationUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/saturation%20up3.png" />
                      </image>
