@@ -94,35 +94,31 @@ public class Controller
         });
     }
 
-    public void FileChooseAction()
-    {
+    public void FileChooseAction() {
         FileChooser fc = new FileChooser();
         FileChooser.ExtensionFilter fileExtensions =
                 new FileChooser.ExtensionFilter(
                         "Obraz", "*.bmp", "*.jpg", "*.png");
         fc.getExtensionFilters().add(fileExtensions);
         File openedFile = fc.showOpenDialog(null);
-        if(openedFile != null){
-            unsavedChanges = false;
-            imageFile = openedFile;
-            canvas.setDisable(false);
-            canvas.setVisible(true);
-            scrollPane.setVisible(true);
-            if (canvas.getOnScroll() == null)
-                setScrollZooming();
-            System.out.println("Sciezka: "+imageFile.getAbsolutePath());
-            resetMats();
-            byteMat = new MatOfByte();
-            scale = 1;
-            zoomLabel.setText((int)(scale*100)+"%");
-            canvas.setHeight(m.height());
-            canvas.setWidth(m.width());
-            gc = canvas.getGraphicsContext2D();
-            Platform.runLater(drawer);
-            enableButtons();
-        } else {
-            System.out.println("Plik niepoprawny!");
-        }
+        if (openedFile == null)
+            return;
+        unsavedChanges = false;
+        imageFile = openedFile;
+        canvas.setDisable(false);
+        canvas.setVisible(true);
+        scrollPane.setVisible(true);
+        if (canvas.getOnScroll() == null)
+            setScrollZooming();
+        resetMats();
+        byteMat = new MatOfByte();
+        scale = 1;
+        zoomLabel.setText((int) (scale * 100) + "%");
+        canvas.setHeight(m.height());
+        canvas.setWidth(m.width());
+        gc = canvas.getGraphicsContext2D();
+        Platform.runLater(drawer);
+        enableButtons();
     }
 
     //przywraca macierze z obrazem i jego wczesniejszymi wersjami do domyślnych wartości
@@ -281,7 +277,6 @@ public class Controller
         if (file == null)
             return;
         imageFile = file;
-        System.out.println("Sciezka zapisu: "+file.getAbsolutePath());
         saveFile(imageFile);
     }
 
@@ -364,8 +359,6 @@ public class Controller
                 Platform.runLater(drawer);
                 Platform.runLater(navigator);
             }
-        } else {
-            System.out.println("Nie wczytano poprawnego pliku!");
         }
     }
 
@@ -443,7 +436,7 @@ public class Controller
         closeMenuItem.setDisable(true);
         encrypt.setDisable(true);
         autoStitchingMenuItem.setDisable(true);
-        autoStitchingMenuItem.setDisable(true);
+        manualStitchingMenuItem.setDisable(true);
     }
 
     private void changeBrightness(int change)

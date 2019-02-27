@@ -78,7 +78,7 @@ public class Stitcher
             Imgproc.resize(m2, m2, new Size(M2TARGET_WIDTH, m2.height()/m2Scale), INTER_CUBIC);
             Imgproc.resize(m1, m1, new Size(m1.width()/m2Scale, m1.height()/m2Scale), INTER_CUBIC);
         }
-        for (double scale = 0.8; scale < 1.21; scale += 0.01)
+        for (double scale = 0.9; scale < 1.21; scale += 0.01)
             addScaledMats(scale);
     }
 
@@ -149,7 +149,6 @@ public class Stitcher
                 bestCustomMat = m;
             }
         }
-        System.out.println("BCM: scale "+bestCustomMat.scale);
         return bestCustomMat;
     }
 
@@ -223,7 +222,6 @@ public class Stitcher
                     bestCenterY = commonFieldCenterY;
                     bestX = x;
                     bestY = y;
-                    System.out.println("x: "+x+" y: "+y);
                 }
 
             }
@@ -231,7 +229,6 @@ public class Stitcher
         }
         p1 = new Point(m1.width()*bestCenterX/ controlPointsMatsSize, m1.height()*bestCenterY/ controlPointsMatsSize);
         p2 = new Point(m2.width()*(bestCenterX-bestX)/ controlPointsMatsSize, m2.height()*(bestCenterY-bestY)/ controlPointsMatsSize);
-        System.out.println("p1x = "+p1.x+" p1y = "+p1.y+" p2x = "+p2.x+" p2y = "+p2.y);
     }
 
 
@@ -245,6 +242,8 @@ public class Stitcher
 
     private static void manualStitching()
     {
+        if (m1.height()!=m2.height())
+            return;
         m3 = new Mat();
         Core.hconcat(Arrays.asList(m1,m2),m3);
         double m3width = m3.width();
