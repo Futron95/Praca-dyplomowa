@@ -19,7 +19,7 @@ public class Encryptor {
     static TextField codeField;
     static boolean okPressed;
 
-    public static void displayWindow()
+    public static void createAndDisplayWindow()
     {
         Stage window = new Stage();
         window.initModality(Modality.APPLICATION_MODAL);
@@ -38,7 +38,7 @@ public class Encryptor {
             window.close();
         });
         Button generateButton = new Button("Generuj");
-        generateButton.setOnAction(event -> codeField.setText(getNewCode()));
+        generateButton.setOnAction(event -> codeField.setText(getRandomCode()));
         VBox layout = new VBox(20);
         HBox hBox = new HBox(10);
         hBox.setAlignment(Pos.CENTER);
@@ -51,7 +51,7 @@ public class Encryptor {
         window.showAndWait();
     }
 
-    private static String getNewCode()
+    private static String getRandomCode()
     {
         int charCode;
         String code = "";            //kod liter i znaków, który będzie używany do szyfrowania i odszyfrowywania obrazu
@@ -77,7 +77,7 @@ public class Encryptor {
     public static boolean encrypt(Mat m)
     {
         okPressed = false;
-        displayWindow();
+        createAndDisplayWindow();
         if (okPressed == false)
             return false;
         String code = codeField.getText();
@@ -97,7 +97,7 @@ public class Encryptor {
             r.nextBytes(randomMatrix);
             charactersLeft -= subcodeLength;
             usedCharacters += subcodeLength;
-            for (int i = 0; i < size; i++)            //pętle przechodzące przez wszystkie piksele obrazu
+            for (int i = 0; i < size; i++)
                 matrix[i] = (byte) (matrix[i] ^ randomMatrix[i]);
         }
         m.put(0,0,matrix);

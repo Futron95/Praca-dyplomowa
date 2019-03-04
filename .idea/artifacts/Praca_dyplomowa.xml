@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact type="javafx" name="Praca dyplomowa">
+  <artifact type="javafx" build-on-make="true" name="Praca dyplomowa">
     <output-path>$PROJECT_DIR$/out/artifacts/Praca_dyplomowa</output-path>
     <properties id="javafx-properties">
       <options>
@@ -18,7 +18,6 @@
         <element id="directory" name="META-INF">
           <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
         </element>
-        <element id="library" level="project" name="opencv-343" />
       </element>
     </root>
   </artifact>

@@ -120,7 +120,6 @@ public class Rotater {
             Mat tempMat = new Mat(fitAllSize, m.type(), new Scalar(0));
             Point translateCoordinates = new Point((tempMat.width()-m.width())/2, (tempMat.height()-m.height())/2);
             Rect roi = new Rect(translateCoordinates, m.size());
-            System.out.println("Kopiuje Mat m o rozmiarach: width="+m.width()+" height="+m.height()+" do tempMat o rozmiarach: width="+tempMat.width()+" height="+tempMat.height()+"\nuzywajac roi: x="+roi.x+" y="+roi.y+" width="+roi.width+" height"+roi.height);
             m.copyTo(new Mat(tempMat, roi));
             Point center = new Point(tempMat.width()/2, tempMat.height()/2);
             Imgproc.warpAffine(tempMat, tempMat, Imgproc.getRotationMatrix2D(center, slider.getValue(), 1.0), tempMat.size(),interpolationFlag);

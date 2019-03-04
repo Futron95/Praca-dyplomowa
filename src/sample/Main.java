@@ -17,7 +17,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        Controller.loadButtonImages();
+        //Controller.loadButtonImages();
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         primaryStage.setTitle("Edytor obrazów");
         primaryStage.setScene(new Scene(root));
@@ -26,6 +26,7 @@ public class Main extends Application {
                 if (CloseBox.show() != true)
                     event.consume();
         });
+        Controller.currentController.setUp();
         primaryStage.show();
     }
 

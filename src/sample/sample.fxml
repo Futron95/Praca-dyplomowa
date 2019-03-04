@@ -51,66 +51,76 @@
             </MenuBar>
             <Pane prefHeight="34.0" prefWidth="1100.0">
                <children>
-                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="109.0" layoutY="4.0" onMousePressed="#brightnessDownPressed" onMouseReleased="#brightnessDownReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="187.0" layoutY="4.0" onMouseReleased="#brightnessDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20down3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="152.0" layoutY="4.0" onMousePressed="#brightnessUpPressed" onMouseReleased="#brightnessUpReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="brightnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="230.0" layoutY="4.0" onMouseReleased="#brightnessUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/brightness%20up3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="235.0" layoutY="4.0" onMousePressed="#contrastUpPressed" onMouseReleased="#contrastUpReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="contrastUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="313.0" layoutY="4.0" onMouseReleased="#contrastUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20up3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="192.0" layoutY="4.0" onMousePressed="#contrastDownPressed" onMouseReleased="#contrastDownReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="contrastDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="270.0" layoutY="4.0" onMouseReleased="#contrastDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/contrast%20down3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="282.0" layoutY="4.0" onMousePressed="#saturationDownPressed" onMouseReleased="#saturationDownReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="saturationDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="360.0" layoutY="4.0" onMouseReleased="#saturationDownReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/saturation%20down3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="325.0" layoutY="4.0" onMousePressed="#saturationUpPressed" onMouseReleased="#saturationUpReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="saturationUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="403.0" layoutY="4.0" onMouseReleased="#saturationUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/saturation%20up3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="undoImageView" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="10.0" layoutY="4.0" onMouseClicked="#undo" onMousePressed="#undoPressed" onMouseReleased="#undoReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="undoImageView" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="10.0" layoutY="4.0" onMouseClicked="#undo" onMouseReleased="#undoReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/undo3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="redoImageView" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="46.0" layoutY="4.0" onMouseClicked="#redo" onMousePressed="#redoPressed" onMouseReleased="#redoReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="redoImageView" disable="true" fitHeight="24.0" fitWidth="24.0" layoutX="46.0" layoutY="4.0" onMouseClicked="#redo" onMouseReleased="#redoReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/redo3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="zoomin" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="446.0" layoutY="4.0" onMouseClicked="#scaleUp" onMousePressed="#zoominPressed" onMouseReleased="#zoominReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="zoomin" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="133.0" layoutY="4.0" onMouseClicked="#scaleUp" onMouseReleased="#zoominReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/zoomin3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="zoomout" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="406.0" layoutY="4.0" onMouseClicked="#scaleDown" onMousePressed="#zoomoutPressed" onMouseReleased="#zoomoutReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="zoomout" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="93.0" layoutY="4.0" onMouseClicked="#scaleDown" onMouseReleased="#zoomoutReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/zoomout3.png" />
                      </image>
                   </ImageView>
-                  <ImageView fx:id="rotate" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="367.0" layoutY="4.0" onMouseClicked="#rotateImg" onMousePressed="#rotatePressed" onMouseReleased="#rotateReleased" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fx:id="rotate" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="538.0" layoutY="4.0" onMouseReleased="#rotateReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/rotate3.png" />
                      </image>
                   </ImageView>
-                  <Label fx:id="zoomLabel" layoutX="488.0" layoutY="6.0" prefHeight="24.0" prefWidth="55.0" text="100%" visible="false">
+                  <Label fx:id="zoomLabel" layoutX="590.0" layoutY="6.0" prefHeight="24.0" prefWidth="55.0" text="100%" visible="false">
                      <font>
                         <Font size="14.0" />
                      </font>
                   </Label>
+                  <ImageView fx:id="sharpnessDown" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="449.0" layoutY="4.0" onMouseReleased="#sharpnessDownReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/sharpness%20down3.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="sharpnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="492.0" layoutY="4.0" onMouseReleased="#sharpnessUpReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/sharpness%20up3.png" />
+                     </image>
+                  </ImageView>
                </children>
             </Pane>
          </children>

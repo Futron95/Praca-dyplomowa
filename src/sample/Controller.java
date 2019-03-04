@@ -1,7 +1,6 @@
 package sample;
 
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -22,12 +21,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
 
 import static org.opencv.imgproc.Imgproc.*;
 
@@ -44,9 +39,9 @@ public class Controller
     public Boolean unsavedChanges;
     private Runnable drawer, navigator;
     public static Controller currentController;
-    public static HashMap<String, Image> buttonImages;
+    public ArrayList<CustomButton> customButtons;
     @FXML
-    private ImageView brightnessUp, brightnessDown, contrastUp, contrastDown, saturationUp, saturationDown, undoImageView, redoImageView, zoomin, zoomout, rotate;
+    private ImageView brightnessUp, brightnessDown, contrastUp, contrastDown, saturationUp, saturationDown, undoImageView, redoImageView, zoomin, zoomout, rotate, sharpnessDown, sharpnessUp;
     @FXML
     private MenuItem save, saveAs, encrypt, autoStitchingMenuItem, manualStitchingMenuItem, undoMenuItem, redoMenuItem, closeMenuItem;
     @FXML
@@ -65,22 +60,7 @@ public class Controller
         navigator = () -> navigationUpdate();
     }
 
-    public static void loadButtonImages()
-    {
-        buttonImages = new HashMap<>();
-        URL url = Controller.class.getResource("/icons");
-        try {
-            File iconsFolder = Paths.get(url.toURI()).toFile();
-            Arrays.stream(iconsFolder.listFiles()).forEach(file -> {
-                Image image = new Image(file.toURI().toString());
-                buttonImages.put(file.getName(), image);
-            });
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void setScrollZooming()
+    public void setUp()
     {
         canvas.setOnScroll(event ->
         {
@@ -92,6 +72,29 @@ public class Controller
                     scaleDown();
             }
         });
+
+        customButtons = new ArrayList<>();
+        customButtons.add(new CustomButton(brightnessDown, "brightness down"));
+        customButtons.add(new CustomButton(brightnessUp, "brightness up"));
+        customButtons.add(new CustomButton(contrastDown, "contrast down"));
+        customButtons.add(new CustomButton(contrastUp, "contrast up"));
+        customButtons.add(new CustomButton(saturationDown, "saturation down"));
+        customButtons.add(new CustomButton(saturationUp, "saturation up"));
+        customButtons.add(new CustomButton(sharpnessDown, "sharpness down"));
+        customButtons.add(new CustomButton(sharpnessUp, "sharpness up"));
+        customButtons.add(new CustomButton(undoImageView, "undo"));
+        customButtons.add(new CustomButton(redoImageView, "redo"));
+        customButtons.add(new CustomButton(zoomin, "zoomin"));
+        customButtons.add(new CustomButton(zoomout, "zoomout"));
+        customButtons.add(new CustomButton(rotate, "rotate"));
+    }
+
+    private CustomButton getButton(String name)
+    {
+        for (CustomButton button: customButtons)
+            if (button.name.equals(name))
+                return button;
+        return null;
     }
 
     public void FileChooseAction() {
@@ -108,8 +111,7 @@ public class Controller
         canvas.setDisable(false);
         canvas.setVisible(true);
         scrollPane.setVisible(true);
-        if (canvas.getOnScroll() == null)
-            setScrollZooming();
+        enableButtons();
         resetMats();
         byteMat = new MatOfByte();
         scale = 1;
@@ -118,7 +120,6 @@ public class Controller
         canvas.setWidth(m.width());
         gc = canvas.getGraphicsContext2D();
         Platform.runLater(drawer);
-        enableButtons();
     }
 
     //przywraca macierze z obrazem i jego wczesniejszymi wersjami do domyślnych wartości
@@ -127,12 +128,10 @@ public class Controller
         currentM = 0;
         backMs = 0;
         forwardMs=0;
-        undoImageView.setDisable(true);
         undoMenuItem.setDisable(true);
-        undoImageView.setImage(buttonImages.get("undo3.png"));
-        redoImageView.setDisable(true);
+        getButton("undo").disable();
         redoMenuItem.setDisable(true);
-        redoImageView.setImage(buttonImages.get("redo3.png"));
+        getButton("redo").disable();
         m = fileToMat(imageFile);
         mats = new Mat[11];
         mats[currentM] = m.clone();
@@ -174,18 +173,16 @@ public class Controller
         save.setDisable(false);
         if (forwardMs>0) {
             forwardMs = 0;
-            redoImageView.setDisable(true);
             redoMenuItem.setDisable(true);
-            redoImageView.setImage(buttonImages.get("redo3.png"));
+            getButton("redo").disable();
         }
         currentM = (currentM + 1) % 11;
         mats[currentM] = m.clone();
         if (backMs < 10) {
             backMs++;
             if (undoImageView.isDisabled()) {
-                undoImageView.setDisable(false);
                 undoMenuItem.setDisable(false);
-                undoImageView.setImage(buttonImages.get("undo.png"));
+                getButton("undo").enable();
             }
         }
     }
@@ -200,17 +197,15 @@ public class Controller
         backMs -= 1;
         if (backMs==0)
         {
-            undoImageView.setDisable(true);
             undoMenuItem.setDisable(true);
-            undoImageView.setImage(buttonImages.get("undo3.png"));
+            getButton("undo").disable();
         }
         Platform.runLater(drawer);
         forwardMs++;
         if (redoImageView.isDisabled())
         {
-            redoImageView.setDisable(false);
             redoMenuItem.setDisable(false);
-            redoImageView.setImage(buttonImages.get("redo.png"));
+            getButton("redo").enable();
         }
     }
 
@@ -223,16 +218,14 @@ public class Controller
         forwardMs--;
         if (forwardMs==0)
         {
-            redoImageView.setDisable(true);
             redoMenuItem.setDisable(true);
-            redoImageView.setImage(buttonImages.get("redo3.png"));
+            getButton("redo").disable();
         }
         backMs++;
         if (undoImageView.isDisabled())
         {
-            undoImageView.setDisable(false);
             undoMenuItem.setDisable(false);
-            undoImageView.setImage(buttonImages.get("undo.png"));
+            getButton("undo").enable();
         }
     }
 
@@ -369,30 +362,12 @@ public class Controller
         canvas.setVisible(false);
         scrollPane.setVisible(false);
         scale = 1;
-        zoomLabel.setText((int)(scale*100)+"%");
         unsavedChanges = false;
     }
 
     private void enableButtons()
     {
-        brightnessUp.setDisable(false);
-        brightnessUp.setImage(buttonImages.get("brightness up.png"));
-        brightnessDown.setDisable(false);
-        brightnessDown.setImage(buttonImages.get("brightness down.png"));
-        contrastDown.setDisable(false);
-        contrastDown.setImage(buttonImages.get("contrast down.png"));
-        contrastUp.setDisable(false);
-        contrastUp.setImage(buttonImages.get("contrast up.png"));
-        saturationUp.setDisable(false);
-        saturationUp.setImage(buttonImages.get("saturation up.png"));
-        saturationDown.setDisable(false);
-        saturationDown.setImage(buttonImages.get("saturation down.png"));
-        zoomin.setDisable(false);
-        zoomin.setImage(buttonImages.get("zoomin.png"));
-        zoomout.setDisable(false);
-        zoomout.setImage(buttonImages.get("zoomout.png"));
-        rotate.setDisable(false);
-        rotate.setImage(buttonImages.get("rotate.png"));
+        customButtons.forEach(button -> button.enable());
         save.setDisable(false);
         saveAs.setDisable(false);
         zoomLabel.setVisible(true);
@@ -406,33 +381,12 @@ public class Controller
 
     private void disableButtons()
     {
-        brightnessUp.setDisable(true);
-        brightnessUp.setImage(buttonImages.get("brightness up3.png"));
-        brightnessDown.setDisable(true);
-        brightnessDown.setImage(buttonImages.get("brightness down3.png"));
-        contrastDown.setDisable(true);
-        contrastDown.setImage(buttonImages.get("contrast down3.png"));
-        contrastUp.setDisable(true);
-        contrastUp.setImage(buttonImages.get("contrast up3.png"));
-        saturationUp.setDisable(true);
-        saturationUp.setImage(buttonImages.get("saturation up3.png"));
-        saturationDown.setDisable(true);
-        saturationDown.setImage(buttonImages.get("saturation down3.png"));
-        zoomin.setDisable(true);
-        zoomin.setImage(buttonImages.get("zoomin3.png"));
-        zoomout.setDisable(true);
-        zoomout.setImage(buttonImages.get("zoomout3.png"));
-        rotate.setDisable(true);
-        rotate.setImage(buttonImages.get("rotate3.png"));
+        customButtons.forEach(button -> button.disable());
         save.setDisable(true);
         saveAs.setDisable(true);
-        zoomLabel.setVisible(true);
+        zoomLabel.setVisible(false);
         undoMenuItem.setDisable(true);
         redoMenuItem.setDisable(true);
-        redoImageView.setDisable(true);
-        redoImageView.setImage(buttonImages.get("redo3.png"));
-        undoImageView.setDisable(true);
-        undoImageView.setImage(buttonImages.get("undo3.png"));
         closeMenuItem.setDisable(true);
         encrypt.setDisable(true);
         autoStitchingMenuItem.setDisable(true);
@@ -453,50 +407,57 @@ public class Controller
         Platform.runLater(navigator);
     }
 
-    public void brightnessDownPressed()
+    private void changeSharpness(Boolean increase)
     {
-        brightnessDown.setImage(buttonImages.get("brightness down2.png"));
+        Mat dest = new Mat(m.rows(),m.cols(),m.type());
+        Imgproc.GaussianBlur(m, dest, new Size(0,0), 1);
+        if (increase == false)
+            m = dest;
+        else
+            Core.addWeighted(m, 1.5, dest, -0.5, 0, m);
+        Platform.runLater(drawer);
+        Platform.runLater(navigator);
     }
 
     public void brightnessDownReleased()
     {
-        brightnessDown.setImage(buttonImages.get("brightness down.png"));
+        getButton("brightness down").release();
         Thread thread = new Thread(()->changeBrightness(-10));
         thread.start();
     }
 
-    public void brightnessUpPressed()
-    {
-        brightnessUp.setImage(buttonImages.get("brightness up2.png"));
-    }
 
     public void brightnessUpReleased()
     {
-        brightnessUp.setImage(buttonImages.get("brightness up.png"));
+        getButton("brightness up").release();
         Thread thread = new Thread(()->changeBrightness(10));
         thread.start();
     }
 
-    public void contrastDownPressed()
+    public void sharpnessDownReleased()
     {
-        contrastDown.setImage(buttonImages.get("contrast down2.png"));
+        getButton("sharpness down").release();
+        Thread thread = new Thread(()->changeSharpness(false));
+        thread.start();
+    }
+
+    public void sharpnessUpReleased()
+    {
+        getButton("sharpness up").release();
+        Thread thread = new Thread(()->changeSharpness(true));
+        thread.start();
     }
 
     public void contrastDownReleased()
     {
-        contrastDown.setImage(buttonImages.get("contrast down.png"));
+        getButton("contrast down").release();
         Thread thread = new Thread(()->changeContrast(0.95));
         thread.start();
     }
 
-    public void contrastUpPressed()
-    {
-        contrastUp.setImage(buttonImages.get("contrast up2.png"));
-    }
-
     public void contrastUpReleased()
     {
-        contrastUp.setImage(buttonImages.get("contrast up.png"));
+        getButton("contrast up").release();
         Thread thread = new Thread(()->changeContrast(1.05));
         thread.start();
     }
@@ -521,78 +482,43 @@ public class Controller
         Platform.runLater(navigator);
     }
 
-    public void saturationDownPressed()
-    {
-        saturationDown.setImage(buttonImages.get("saturation down2.png"));
-    }
-
     public void saturationDownReleased()
     {
-        saturationDown.setImage(buttonImages.get("saturation down.png"));
-        Thread thread = new Thread(() -> changeSaturation(0.95));
+        getButton("saturation down").release();
+        Thread thread = new Thread(() -> changeSaturation(0.90));
         thread.start();
-    }
-
-    public void saturationUpPressed()
-    {
-        saturationUp.setImage(buttonImages.get("saturation up2.png"));
     }
 
     public void saturationUpReleased()
     {
-        saturationUp.setImage(buttonImages.get("saturation up.png"));
-        Thread thread = new Thread(() -> changeSaturation(1.05));
+        getButton("saturation up").release();
+        Thread thread = new Thread(() -> changeSaturation(1.1));
         thread.start();
-    }
-
-    public void undoPressed()
-    {
-        undoImageView.setImage(buttonImages.get("undo2.png"));
     }
 
     public void undoReleased()
     {
-        undoImageView.setImage(buttonImages.get("undo.png"));
-    }
-
-    public void redoPressed()
-    {
-        redoImageView.setImage(buttonImages.get("redo2.png"));
+        getButton("undo").release();
     }
 
     public void redoReleased()
     {
-        redoImageView.setImage(buttonImages.get("redo.png"));
-    }
-
-    public void zoominPressed()
-    {
-        zoomin.setImage(buttonImages.get("zoomin2.png"));
+        getButton("redo").release();
     }
 
     public void zoominReleased()
     {
-        zoomin.setImage(buttonImages.get("zoomin.png"));
-    }
-
-    public void zoomoutPressed()
-    {
-        zoomout.setImage(buttonImages.get("zoomout2.png"));
+        getButton("zoomin").release();
     }
 
     public void zoomoutReleased()
     {
-        zoomout.setImage(buttonImages.get("zoomout.png"));
-    }
-
-    public void rotatePressed()
-    {
-        rotate.setImage(buttonImages.get("rotate2.png"));
+        getButton("zoomout").release();
     }
 
     public void rotateReleased()
     {
-        rotate.setImage(buttonImages.get("rotate.png"));
+        getButton("rotate").release();
         rotateImg();
     }
 }
