@@ -106,7 +106,7 @@
                         <Image url="@../icons/rotate3.png" />
                      </image>
                   </ImageView>
-                  <Label fx:id="zoomLabel" layoutX="590.0" layoutY="6.0" prefHeight="24.0" prefWidth="55.0" text="100%" visible="false">
+                  <Label fx:id="zoomLabel" layoutX="640.0" layoutY="6.0" prefHeight="24.0" prefWidth="55.0" text="100%" visible="false">
                      <font>
                         <Font size="14.0" />
                      </font>
@@ -119,6 +119,11 @@
                   <ImageView fx:id="sharpnessUp" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="492.0" layoutY="4.0" onMouseReleased="#sharpnessUpReleased" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../icons/sharpness%20up3.png" />
+                     </image>
+                  </ImageView>
+                  <ImageView fx:id="resize" disable="true" fitHeight="25.0" fitWidth="35.0" layoutX="580.0" layoutY="4.0" onMouseReleased="#resizeReleased" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../icons/resize3.png" />
                      </image>
                   </ImageView>
                </children>

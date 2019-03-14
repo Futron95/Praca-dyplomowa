@@ -14,6 +14,7 @@ import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import sample.Converters.Encryptor;
+import sample.Converters.Resizer;
 import sample.Converters.Rotater;
 import sample.Converters.Stitcher;
 
@@ -41,7 +42,7 @@ public class Controller
     public static Controller currentController;
     public ArrayList<CustomButton> customButtons;
     @FXML
-    private ImageView brightnessUp, brightnessDown, contrastUp, contrastDown, saturationUp, saturationDown, undoImageView, redoImageView, zoomin, zoomout, rotate, sharpnessDown, sharpnessUp;
+    private ImageView brightnessUp, brightnessDown, contrastUp, contrastDown, saturationUp, saturationDown, undoImageView, redoImageView, zoomin, zoomout, rotate, sharpnessDown, sharpnessUp, resize;
     @FXML
     private MenuItem save, saveAs, encrypt, autoStitchingMenuItem, manualStitchingMenuItem, undoMenuItem, redoMenuItem, closeMenuItem;
     @FXML
@@ -87,6 +88,7 @@ public class Controller
         customButtons.add(new CustomButton(zoomin, "zoomin"));
         customButtons.add(new CustomButton(zoomout, "zoomout"));
         customButtons.add(new CustomButton(rotate, "rotate"));
+        customButtons.add(new CustomButton(resize, "resize"));
     }
 
     private CustomButton getButton(String name)
@@ -324,6 +326,15 @@ public class Controller
        }
     }
 
+    private void resizeImg()
+    {
+        Resizer resizer = new Resizer(m);
+        if (resizer.resize() == true){
+            Platform.runLater(drawer);
+            Platform.runLater(navigator);
+        }
+    }
+
     public void autoStitching()
     {
         stitchImg(true);
@@ -520,5 +531,11 @@ public class Controller
     {
         getButton("rotate").release();
         rotateImg();
+    }
+
+    public void resizeReleased()
+    {
+        getButton("resize").release();
+        resizeImg();
     }
 }
